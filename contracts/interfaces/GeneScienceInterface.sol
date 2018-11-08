@@ -11,4 +11,6 @@ contract GeneScienceInterface {
     /// @param genes2 genes of sire
     /// @return the genes that are supposed to be passed down the child
     function mixGenes(uint256 genes1, uint256 genes2) public returns (uint256);
+
+    function mixTalents(uint256 talents1, uint256 talents2) public returns (uint256);
 }
