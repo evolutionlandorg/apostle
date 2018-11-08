@@ -5,7 +5,7 @@ import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
 import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
-import "./interfaces/GeneScienceInterface.sol";
+import "./interfaces/IGeneScience.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 contract ApostleBase is PausableDSAuth, ApostleSettingIds {
@@ -46,20 +46,20 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     }
 
     uint32[14] public cooldowns = [
-    uint32(1 minutes),
-    uint32(2 minutes),
-    uint32(5 minutes),
-    uint32(10 minutes),
-    uint32(30 minutes),
-    uint32(1 hours),
-    uint32(2 hours),
-    uint32(4 hours),
-    uint32(8 hours),
-    uint32(16 hours),
-    uint32(1 days),
-    uint32(2 days),
-    uint32(4 days),
-    uint32(7 days)
+        uint32(1 minutes),
+        uint32(2 minutes),
+        uint32(5 minutes),
+        uint32(10 minutes),
+        uint32(30 minutes),
+        uint32(1 hours),
+        uint32(2 hours),
+        uint32(4 hours),
+        uint32(8 hours),
+        uint32(16 hours),
+        uint32(1 days),
+        uint32(2 days),
+        uint32(4 days),
+        uint32(7 days)
     ];
 
 
@@ -93,7 +93,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     /// @dev The address of the sibling contract that is used to implement the sooper-sekret
     ///  genetic combination algorithm.
     // TODO: put this into registry
-    GeneScienceInterface public geneScience;
+    IGeneScience public geneScience;
 
 
     function initializeContract(address _registry) public singletonLockCall {

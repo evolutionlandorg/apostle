@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 
 /// @title defined the interface that will be referenced in main Kitty contract
-contract GeneScienceInterface {
+contract IGeneScience {
     /// @dev simply a boolean to indicate this is the contract we expect to be
     function isGeneScience() public pure returns (bool);
 
