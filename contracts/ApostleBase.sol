@@ -10,7 +10,7 @@ import "./interfaces/GeneScienceInterface.sol";
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
-    event Birth(address indexed owner, uint128 apostleId, uint128 matronId, uint128 sireId, uint256 genes);
+    event Birth(address indexed owner, uint128 apostleId, uint128 matronId, uint128 sireId, uint256 genes, uint256 talents);
     event Pregnant(address owner, uint128 matronId, uint128 sireId);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
@@ -21,6 +21,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     struct Apostle {
         // An apostles genes never change.
         uint256 genes;
+
+        uint256 talents;
 
         // the ID of the parents of this Apostle. set to 0 for gen0 apostle.
         // Note that using 128-bit unsigned integers to represent parents IDs,
@@ -104,12 +106,13 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         registry = ISettingsRegistry(_registry);
     }
 
-    function _createApostle(uint128 _matronId, uint128 _sireId, uint256 _generation, uint256 _genes, address _owner) internal returns (uint128) {
+    function _createApostle(uint128 _matronId, uint128 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint128) {
 
         require(_generation <= 65535);
 
         Apostle memory apostle = Apostle({
             genes : _genes,
+            talents : _talents,
             birthTime : uint48(now),
             cooldownEndTime : 0,
             matronId : _matronId,
@@ -126,7 +129,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         tokenId2Apostle[tokenId] = apostle;
         index2TokenId[lastApostleObjectId] = tokenId;
 
-        emit Birth(_owner, lastApostleObjectId, apostle.matronId, apostle.sireId, apostle.genes);
+        emit Birth(_owner, lastApostleObjectId, apostle.matronId, apostle.sireId, apostle.genes, _talents);
 
         return lastApostleObjectId;
     }
@@ -383,12 +386,13 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
         uint256 childGenes = geneScience.mixGenes(matron.genes, sire.genes);
+        uint256 childTalents = geneScience.mixTalents(matron.talents, sire.talents);
 
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
         uint tokenId = index2TokenId[_matronId];
         address owner = objectOwnership.ownerOf(tokenId);
         // Make the new kitten!
-        uint128 apostleId = _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, owner);
+        uint128 apostleId = _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, childTalents, owner);
 
         // Clear the reference to sire from the matron (REQUIRED! Having siringWithId
         // set is what marks a matron as being pregnant.)
