@@ -60,6 +60,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     uint32(7 days)
     ];
 
+
     /*
      *  Modifiers
      */
@@ -102,7 +103,6 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
         registry = ISettingsRegistry(_registry);
     }
-
 
     function _createApostle(uint128 _matronId, uint128 _sireId, uint256 _generation, uint256 _genes, address _owner) internal returns (uint128) {
 
@@ -400,3 +400,5 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
 
 }
+
+
