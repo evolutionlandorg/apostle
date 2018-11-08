@@ -101,11 +101,11 @@ contract ApostleBase is DSAuth, SettingIds {
         });
 
         // auto increase object id, start from 1
-        lastLandObjectId += 1;
+        lastApostleId += 1;
 
-        require(lastLandObjectId <= 340282366920938463463374607431768211455, "Can not be stored with 128 bits.");
+        require(lastApostleId <= 340282366920938463463374607431768211455, "Can not be stored with 128 bits.");
 
-        _tokenId = IObjectOwnership(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).mintObject(_owner, uint128(lastLandObjectId));
+        _tokenId = IObjectOwnership(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).mintObject(_owner, uint128(lastApostleId));
 
         // It's probably never going to happen, 4 billion cats is A LOT, but
         // let's just be 100% sure we never let this happen.
@@ -114,7 +114,7 @@ contract ApostleBase is DSAuth, SettingIds {
         tokenId2Apostle[_tokenId] = _apostle;
 
         // emit the birth event
-        Birth(
+        emit Birth(
             _owner,
             _tokenId,
             uint256(_apostle.matronId),
