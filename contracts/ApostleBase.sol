@@ -379,8 +379,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        uint256 childGenes = geneScience.mixGenes(matron.genes, sire.genes);
-        uint256 childTalents = geneScience.mixTalents(matron.talents, sire.talents);
+        (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents);
 
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
         address owner = objectOwnership.ownerOf(_matronId);
