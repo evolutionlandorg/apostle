@@ -6,6 +6,7 @@ import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
 import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./interfaces/IGeneScience.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 contract ApostleBase is PausableDSAuth, ApostleSettingIds {
@@ -79,11 +80,6 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     uint128 public lastApostleObjectId;
 
     ISettingsRegistry registry;
-
-    /// @notice The minimum payment required to use breedWithAuto(). This fee goes towards
-    ///  the gas cost paid by the auto-birth daemon, and can be dynamically updated by
-    ///  the COO role as the gas price changes.
-    uint256 public autoBirthFee = 1000000 * 1000000000; // (1M * 1 gwei)
 
     mapping(uint256 => Apostle) public tokenId2Apostle;
 
@@ -181,19 +177,15 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         }
     }
 
-    function setAutoBirthFee(uint256 _val) public onlyOwner {
-        autoBirthFee = _val;
-    }
-
     function _isReadyToGiveBirth(Apostle storage _matron) private view returns (bool) {
         return (_matron.siringWithId != 0) && (_matron.cooldownEndTime <= now);
     }
 
     /// @dev Internal check to see if a given sire and matron are a valid mating pair. DOES NOT
     ///  check ownership permissions (that is up to the caller).
-    /// @param _matron A reference to the Kitty struct of the potential matron.
+    /// @param _matron A reference to the apostle struct of the potential matron.
     /// @param _matronId The matron's ID.
-    /// @param _sire A reference to the Kitty struct of the potential sire.
+    /// @param _sire A reference to the apostle struct of the potential sire.
     /// @param _sireId The sire's ID
     function _isValidMatingPair(
         Apostle storage _matron,
@@ -205,12 +197,12 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     view
     returns (bool)
     {
-        // A Kitty can't breed with itself!
+        // An apostle can't breed with itself!
         if (_matronId == _sireId) {
             return false;
         }
 
-        // Kitties can't breed with their parents.
+        // Apostles can't breed with their parents.
         if (_matron.matronId == _sireId || _matron.sireId == _sireId) {
             return false;
         }
@@ -224,7 +216,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             return true;
         }
 
-        // Kitties can't breed with full or half siblings.
+        // Apostles can't breed with full or half siblings.
         if (_sire.matronId == _matron.matronId || _sire.matronId == _matron.sireId) {
             return false;
         }
@@ -261,14 +253,24 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
 
     function breedWith(uint256 _matronId, uint256 _sireId) public whenNotPaused {
-        // Caller must own the matron.
+
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-        require(objectOwnership.ownerOf(_matronId) == msg.sender);
+
+        require(_isAbleToBreed(objectOwnership, _matronId, _sireId, msg.sender));
+
+        // All checks passed, apostle gets pregnant!
+        _breedWith(objectOwnership, _matronId, _sireId);
+    }
+
+
+    function _isAbleToBreed(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId, address _owner) internal returns (bool){
+        // Caller must own the matron.
+        require(_objectOwnership.ownerOf(_matronId) == _owner);
 
         // Neither sire nor matron are allowed to be on auction during a normal
         // breeding operation, but we don't need to check that explicitly.
         // For matron: The caller of this function can't be the owner of the matron
-        //   because the owner of a Kitty on auction is the auction house, and the
+        //   because the owner of an apostle on auction is the auction house, and the
         //   auction house will never call breedWith().
         // For sire: Similarly, a sire on auction will be owned by the auction house
         //   and the act of transferring ownership will have cleared any oustanding
@@ -301,12 +303,11 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
                 _sireId
             ));
 
-        // All checks passed, kitty gets pregnant!
-        _breedWith(objectOwnership, _matronId, _sireId);
+        return true;
     }
 
     function _breedWith(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId) internal {
-        // Grab a reference to the Kitties from storage.
+        // Grab a reference to the Apostles from storage.
         Apostle storage sire = tokenId2Apostle[_sireId];
 
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -331,11 +332,13 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
     function breedWithAuto(uint256 _matronId, uint256 _sireId)
     public
-    payable
     whenNotPaused
     {
         // Check for payment
-        require(msg.value >= autoBirthFee);
+        // caller must approve first.
+        uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
+        ERC20 ring = ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN));
+        require(ring.transferFrom(msg.sender, address(this), autoBirthFee));
 
         // Call through the normal breeding flow
         breedWith(_matronId, _sireId);
@@ -346,14 +349,14 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         emit AutoBirth(_matronId, uint48(matron.cooldownEndTime));
     }
 
-    /// @notice Have a pregnant Kitty give birth!
-    /// @param _matronId A Kitty ready to give birth.
-    /// @return The Kitty ID of the new kitten.
-    /// @dev Looks at a given Kitty and, if pregnant and if the gestation period has passed,
-    ///  combines the genes of the two parents to create a new kitten. The new Kitty is assigned
+    /// @notice Have a pregnant apostle give birth!
+    /// @param _matronId An apostle ready to give birth.
+    /// @return The apostle tokenId of the new Apostles.
+    /// @dev Looks at a given apostle and, if pregnant and if the gestation period has passed,
+    ///  combines the genes of the two parents to create a new Apostles. The new apostle is assigned
     ///  to the current owner of the matron. Upon successful completion, both the matron and the
-    ///  new kitten will be ready to breed again. Note that anyone can call this function (if they
-    ///  are willing to pay the gas!), but the new kitten always goes to the mother's owner.
+    ///  new Apostles will be ready to breed again. Note that anyone can call this function (if they
+    ///  are willing to pay the gas!), but the new Apostles always goes to the mother's owner.
     function giveBirth(uint256 _matronId)
     public
     whenNotPaused
@@ -383,15 +386,45 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
         address owner = objectOwnership.ownerOf(_matronId);
-        // Make the new kitten!
+        // Make the new Apostle!
         uint256 apostleId = _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, childTalents, owner);
 
         // Clear the reference to sire from the matron (REQUIRED! Having siringWithId
         // set is what marks a matron as being pregnant.)
         delete matron.siringWithId;
 
-        // return the new kitten's ID
+        // return the new Apostle's ID
         return apostleId;
+    }
+
+    function tokenFallback(address _from, uint256 _value, bytes _data) public {
+        address ring = registry.addressOf(CONTRACT_RING_ERC20_TOKEN);
+        uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
+
+        if(msg.sender == ring) {
+            require(_value >= autoBirthFee);
+
+            uint matronId;
+            uint sireId;
+
+            assembly {
+                let ptr := mload(0x40)
+                calldatacopy(ptr, 0, calldatasize)
+                matronId := mload(add(ptr, 132))
+                sireId := mload(add(ptr, 164))
+            }
+
+            ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
+
+            require(_isAbleToBreed(objectOwnership, matronId, sireId, _from));
+
+            // All checks passed, apostle gets pregnant!
+            _breedWith(objectOwnership, matronId, sireId);
+
+        }
+
+
+
     }
 
 
