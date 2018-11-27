@@ -9,10 +9,11 @@ import "./interfaces/IGeneScience.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
+// this is CONTRACT_MINER
 contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
     event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents);
-    event Pregnant(address owner, uint256 matronId, uint256 sireId);
+    event Pregnant(uint256 matronId, uint256 sireId);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
     ///  function. This is used to notify the auto-birth daemon that this breeding action
@@ -100,6 +101,11 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         registry = ISettingsRegistry(_registry);
     }
 
+    // called by ApostleMinting
+    function createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth {
+        _createApostle(_matronId, _sireId, _generation, _genes, _talents, _owner);
+    }
+
     function _createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint256) {
 
         require(_generation <= 65535);
@@ -126,6 +132,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
         return tokenId;
     }
+
 
     function _isReadyToBreed(Apostle storage _aps) internal view returns (bool) {
         // In addition to checking the cooldownEndTime, we also need to check to see if
@@ -155,6 +162,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         sireAllowedToAddress[_sireId] = _addr;
     }
 
+    // check apostle's owner or siring permission
     function _isSiringPermitted(uint256 _sireId, uint256 _matronId) internal view returns (bool) {
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
         address matronOwner = objectOwnership.ownerOf(_matronId);
@@ -259,7 +267,21 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         require(_isAbleToBreed(objectOwnership, _matronId, _sireId, msg.sender));
 
         // All checks passed, apostle gets pregnant!
-        _breedWith(objectOwnership, _matronId, _sireId);
+        _breedWith(_matronId, _sireId);
+    }
+
+    // only can be called by SiringClockAuction
+    function breedWithInAuction(uint256 _matronId, uint256 _sireId) public auth returns (bool) {
+        _breedWith(_matronId, _sireId);
+
+        Apostle storage matron = tokenId2Apostle[_matronId];
+        emit AutoBirth(_matronId, matron.cooldownEndTime);
+        return true;
+    }
+
+    function isAbleToBreed(uint256 _matronId, uint256 _sireId, address _owner) public view returns(bool) {
+        ERC721 objectOwnership = ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP));
+        return _isAbleToBreed(objectOwnership, _matronId, _sireId, _owner);
     }
 
 
@@ -306,7 +328,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return true;
     }
 
-    function _breedWith(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId) internal {
+    function _breedWith(uint256 _matronId, uint256 _sireId) internal {
         // Grab a reference to the Apostles from storage.
         Apostle storage sire = tokenId2Apostle[_sireId];
 
@@ -324,11 +346,12 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         delete sireAllowedToAddress[_matronId];
         delete sireAllowedToAddress[_sireId];
 
-        address matronOwner = _objectOwnership.ownerOf(_matronId);
+
 
         // Emit the pregnancy event.
-        emit Pregnant(matronOwner, _matronId, _sireId);
+        emit Pregnant(_matronId, _sireId);
     }
+
 
     function breedWithAuto(uint256 _matronId, uint256 _sireId)
     public
@@ -414,12 +437,9 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
                 sireId := mload(add(ptr, 164))
             }
 
-            ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-
-            require(_isAbleToBreed(objectOwnership, matronId, sireId, _from));
 
             // All checks passed, apostle gets pregnant!
-            _breedWith(objectOwnership, matronId, sireId);
+            breedWith(matronId, sireId);
 
         }
 
