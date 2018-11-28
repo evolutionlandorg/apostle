@@ -133,6 +133,7 @@ contract SiringClockAuction is SiringAuctionBase {
         // safer for users
         require (msg.sender == tokenIdToAuction[sireId].token);
         require(tokenIdToAuction[sireId].startedAt > 0);
+        require(IApostleBase(registry.addressOf(CONTRACT_MINER)).canBreedWithViaAuction(matronId, sireId));
 
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
         _bidWithToken(_from, sireId, matronId, _valueInToken, autoBirthFee);
@@ -166,7 +167,7 @@ contract SiringClockAuction is SiringAuctionBase {
             // Tell the world!
             emit AuctionSuccessful(_sireId, priceInToken, _from);
 
-            require(IApostleBase(registry.addressOf(CONTRACT_MINER)).breedWithInAuction(_sireId, _matronId));
+            require(IApostleBase(registry.addressOf(CONTRACT_MINER)).breedWithInAuction(_from, _matronId, _sireId));
 
         }
 
