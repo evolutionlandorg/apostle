@@ -22,4 +22,8 @@ contract ApostleSettingIds is SettingIds {
 
     bytes32 public constant CONTRACT_REVENUE_POOL = "CONTRACT_REVENUE_POOL";
 
+    // when player wants to buy their apostle some talents
+    // the minimum or unit they need to pay
+    bytes32 public constant UINT_MIX_TALENT = "UINT_MIX_TALENT";
+
 }
