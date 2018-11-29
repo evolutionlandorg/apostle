@@ -7,7 +7,6 @@ import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./interfaces/IGeneScience.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/ILandBase.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_MINER
@@ -261,30 +260,17 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     }
 
 
-    function breedWith(uint256 _matronId, uint256 _sireId) public whenNotPaused {
-
-        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-
-        require(_isAbleToBreed(objectOwnership, _matronId, _sireId, msg.sender));
-
-        // All checks passed, apostle gets pregnant!
-        _breedWith(_matronId, _sireId);
-    }
-
     // only can be called by SiringClockAuction
     function breedWithInAuction(address _owner, uint256 _matronId, uint256 _sireId) public auth returns (bool) {
 
-        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-        // require the bidder owns _matronId
-        require(_isAbleToBreed(objectOwnership, _matronId, _sireId, _owner));
-        _breedWith(_matronId, _sireId);
+        _breedWith(_matronId, _sireId, _owner);
 
         Apostle storage matron = tokenId2Apostle[_matronId];
         emit AutoBirth(_matronId, matron.cooldownEndTime);
         return true;
     }
 
-    function isAbleToBreed(uint256 _matronId, uint256 _sireId, address _owner) public view returns(bool) {
+    function isAbleToBreed(uint256 _matronId, uint256 _sireId, address _owner) public view returns (bool) {
         ERC721 objectOwnership = ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP));
         return _isAbleToBreed(objectOwnership, _matronId, _sireId, _owner);
     }
@@ -333,7 +319,12 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return true;
     }
 
-    function _breedWith(uint256 _matronId, uint256 _sireId) internal {
+    function _breedWith(uint256 _matronId, uint256 _sireId, address _owner) internal {
+
+        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
+
+        require(_isAbleToBreed(objectOwnership, _matronId, _sireId, _owner));
+
         // Grab a reference to the Apostles from storage.
         Apostle storage sire = tokenId2Apostle[_sireId];
 
@@ -352,7 +343,6 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         delete sireAllowedToAddress[_sireId];
 
 
-
         // Emit the pregnancy event.
         emit Pregnant(_matronId, _sireId);
     }
@@ -369,7 +359,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         require(ring.transferFrom(msg.sender, address(this), autoBirthFee));
 
         // Call through the normal breeding flow
-        breedWith(_matronId, _sireId);
+        _breedWith(_matronId, _sireId, msg.sender);
 
         // Emit an AutoBirth message so the autobirth daemon knows when and for what cat to call
         // giveBirth().
@@ -385,37 +375,26 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     ///  to the current owner of the matron. Upon successful completion, both the matron and the
     ///  new Apostles will be ready to breed again. Note that anyone can call this function (if they
     ///  are willing to pay the gas!), but the new Apostles always goes to the mother's owner.
-    function giveBirth(uint256 _matronId, address[] _resourceTokens, uint256[] _levels)
+    function giveBirth(uint256 _matronId, address _resourceToken, uint256 _level)
     public
     whenNotPaused
-    returns (uint256)
     {
-        (uint256 childGenes, uint256 childTalents, uint16 parentGen) = _payAndMix(_matronId, _resourceTokens, _levels);
 
-        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-        address owner = objectOwnership.ownerOf(_matronId);
-        // Make the new Apostle!
-        uint256 apostleId = _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, childTalents, owner);
-
-        Apostle storage matron = tokenId2Apostle[_matronId];
-
-        // Clear the reference to sire from the matron (REQUIRED! Having siringWithId
-        // set is what marks a matron as being pregnant.)
-        delete matron.siringWithId;
-
-        // return the new Apostle's ID
-        return apostleId;
+        if (_resourceToken != address(0)) {
+            // users must approve enough resourceToken to this contract
+            // if _resourceToken is registered
+            // will be checked in mixgenes
+            ERC20(_resourceToken).transferFrom(msg.sender, address(this), _level * registry.uintOf(UINT_MIX_TALENT));
+        }
+        require(_payAndMix(_matronId, _resourceToken, _level));
     }
 
 
-    function _payAndMix(uint256 _matronId, address[] _resourceTokens, uint256[] _levels) internal returns (uint childGenes, uint childTalents, uint16 parentGen) {
-
-        require(_resourceTokens.length <= 2 && _resourceTokens.length == _levels.length);
-        // users must approve enough resourceToken to this contract
-
-        for(uint i = 0; i < _resourceTokens.length; i++){
-            ERC20(_resourceTokens[i]).transferFrom(msg.sender, address(this), _levels[i]  * registry.uintOf(UINT_MIX_TALENT));
-        }
+    function _payAndMix(
+        uint256 _matronId,
+        address _resourceToken,
+        uint256 _level)
+    internal returns (bool) {
 
         // Grab a reference to the matron in storage.
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -427,28 +406,40 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         require(_isReadyToGiveBirth(matron));
 
         // Grab a reference to the sire in storage.
-        uint256 sireId = matron.siringWithId;
-        Apostle storage sire = tokenId2Apostle[sireId];
+        //        uint256 sireId = matron.siringWithId;
+        // prevent stack too deep error
+        Apostle storage sire = tokenId2Apostle[matron.siringWithId];
 
         // Determine the higher generation number of the two parents
-        parentGen = matron.generation;
+        uint16 parentGen = matron.generation;
         if (sire.generation > matron.generation) {
             parentGen = sire.generation;
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (childGenes, childTalents) = geneScience.mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceTokens, _levels);
+        (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
+
+        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
+        address owner = objectOwnership.ownerOf(_matronId);
+        // Make the new Apostle!
+        _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, childTalents, owner);
+
+        // Clear the reference to sire from the matron (REQUIRED! Having siringWithId
+        // set is what marks a matron as being pregnant.)
+        delete matron.siringWithId;
+
+        return true;
     }
 
     function tokenFallback(address _from, uint256 _value, bytes _data) public {
-        address ring = registry.addressOf(CONTRACT_RING_ERC20_TOKEN);
         uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
 
-        if(msg.sender == ring) {
-            require(_value >= autoBirthFee);
+        uint matronId;
+        uint sireId;
+        uint level;
 
-            uint matronId;
-            uint sireId;
+        if (msg.sender == registry.addressOf(CONTRACT_RING_ERC20_TOKEN)) {
+            require(_value >= autoBirthFee, 'not enough to breed.');
 
             assembly {
                 let ptr := mload(0x40)
@@ -457,16 +448,25 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
                 sireId := mload(add(ptr, 164))
             }
 
-
             // All checks passed, apostle gets pregnant!
-            breedWith(matronId, sireId);
+            _breedWith(matronId, sireId, _from);
 
             Apostle storage matron = tokenId2Apostle[matronId];
             emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
 
+        } else {
+
+            assembly {
+                let ptr := mload(0x40)
+                calldatacopy(ptr, 0, calldatasize)
+                matronId := mload(add(ptr, 132))
+                level := mload(add(ptr, 164))
+            }
+
+            require(_value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
+
+            require(_payAndMix(matronId, msg.sender, level));
         }
-
-
 
     }
 
