@@ -48,20 +48,20 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     }
 
     uint32[14] public cooldowns = [
-    uint32(1 minutes),
-    uint32(2 minutes),
-    uint32(5 minutes),
-    uint32(10 minutes),
-    uint32(30 minutes),
-    uint32(1 hours),
-    uint32(2 hours),
-    uint32(4 hours),
-    uint32(8 hours),
-    uint32(16 hours),
-    uint32(1 days),
-    uint32(2 days),
-    uint32(4 days),
-    uint32(7 days)
+        uint32(1 minutes),
+        uint32(2 minutes),
+        uint32(5 minutes),
+        uint32(10 minutes),
+        uint32(30 minutes),
+        uint32(1 hours),
+        uint32(2 hours),
+        uint32(4 hours),
+        uint32(8 hours),
+        uint32(16 hours),
+        uint32(1 days),
+        uint32(2 days),
+        uint32(4 days),
+        uint32(7 days)
     ];
 
 
@@ -406,7 +406,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         require(_isReadyToGiveBirth(matron));
 
         // Grab a reference to the sire in storage.
-//        uint256 sireId = matron.siringWithId;
+        //        uint256 sireId = matron.siringWithId;
         // prevent stack too deep error
         Apostle storage sire = tokenId2Apostle[matron.siringWithId];
 
@@ -439,7 +439,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         uint level;
 
         if (msg.sender == registry.addressOf(CONTRACT_RING_ERC20_TOKEN)) {
-        require(_value >= autoBirthFee, 'not enough to breed.');
+            require(_value >= autoBirthFee, 'not enough to breed.');
 
             assembly {
                 let ptr := mload(0x40)
@@ -448,11 +448,11 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
                 sireId := mload(add(ptr, 164))
             }
 
-        // All checks passed, apostle gets pregnant!
-        _breedWith(matronId, sireId, _from);
+            // All checks passed, apostle gets pregnant!
+            _breedWith(matronId, sireId, _from);
 
-        Apostle storage matron = tokenId2Apostle[matronId];
-        emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
+            Apostle storage matron = tokenId2Apostle[matronId];
+            emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
 
         } else {
 
