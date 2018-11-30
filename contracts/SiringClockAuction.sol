@@ -183,12 +183,18 @@ contract SiringClockAuction is SiringAuctionBase {
     function onERC721Received(
         address, //_operator,
         address, //_from,
-        uint256, // _tokenId,
+        uint256 _tokenId,
         bytes //_data
     )
     public
     returns (bytes4) {
-        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+
+        // owner can put apostle onto siring market
+        // after coolDownEndTime
+        if(IApostleBase(registry.addressOf(CONTRACT_MINER)).isReadyToBreed(_tokenId)) {
+            return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+        }
+
     }
 
 
