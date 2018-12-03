@@ -9,7 +9,7 @@ contract IApostleBase {
 
     function isAbleToBreed(uint256 _matronId, uint256 _sireId, address _owner) public view returns(bool);
 
-    function breedWithInAuction(address _owner, uint256 _matronId, uint256 _sireId) public returns (bool);
+    function breedWithInAuction(uint256 _matronId, uint256 _sireId) public returns (bool);
 
     function canBreedWithViaAuction(uint256 _matronId, uint256 _sireId) public view returns (bool);
 

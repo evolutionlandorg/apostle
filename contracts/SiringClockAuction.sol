@@ -168,7 +168,7 @@ contract SiringClockAuction is SiringAuctionBase {
 
         address apostleBase = registry.addressOf(CONTRACT_APOSTLE_BASE);
 
-        require(IApostleBase(apostleBase).breedWithInAuction(_from, _sireId, _matronId));
+        require(IApostleBase(apostleBase).breedWithInAuction(_sireId, _matronId));
 
         // Tell the world!
         emit AuctionSuccessful(_sireId, _priceInToken, _from);

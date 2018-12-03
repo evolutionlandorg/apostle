@@ -180,7 +180,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return (matronOwner == sireOwner || sireAllowedToAddress[_sireId] == matronOwner);
     }
 
-    function _triggerCooldown(uint256 _tokenId, address _owner) internal {
+    function _triggerCooldown(uint256 _tokenId) internal {
 
         Apostle storage aps = tokenId2Apostle[_tokenId];
         // Compute the end of the cooldown time (based on current cooldownIndex)
@@ -193,7 +193,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             aps.cooldownIndex += 1;
         }
 
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).startActivity(_tokenId, _owner);
+        // address(0) meaning use by its owner or whitelisted contract
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).startActivity(_tokenId, address(0));
 
     }
 
@@ -273,25 +274,20 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
 
     // only can be called by SiringClockAuction
-    function breedWithInAuction(address _owner, uint256 _matronId, uint256 _sireId) public auth returns (bool) {
+    function breedWithInAuction(uint256 _matronId, uint256 _sireId) public auth returns (bool) {
 
-        _breedWith(_matronId, _sireId, _owner);
+        _breedWith(_matronId, _sireId);
 
         Apostle storage matron = tokenId2Apostle[_matronId];
         emit AutoBirth(_matronId, matron.cooldownEndTime);
         return true;
     }
 
-    function isAbleToBreed(uint256 _matronId, uint256 _sireId, address _owner) public view returns (bool) {
-        ERC721 objectOwnership = ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP));
-        return _isAbleToBreed(objectOwnership, _matronId, _sireId, _owner);
+    function isAbleToBreed(uint256 _matronId, uint256 _sireId) public view returns (bool) {
+        return _isAbleToBreed(_matronId, _sireId);
     }
 
-
-    function _isAbleToBreed(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId, address _owner) internal view returns (bool){
-        // Caller must own the matron.
-        require(_objectOwnership.ownerOf(_matronId) == _owner);
-
+    function _isAbleToBreed(uint256 _matronId, uint256 _sireId) internal view returns (bool) {
         // Neither sire nor matron are allowed to be on auction during a normal
         // breeding operation, but we don't need to check that explicitly.
         // For matron: The caller of this function can't be the owner of the matron
@@ -331,11 +327,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return true;
     }
 
-    function _breedWith(uint256 _matronId, uint256 _sireId, address _owner) internal {
-
-        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-
-        require(_isAbleToBreed(objectOwnership, _matronId, _sireId, _owner));
+    function _breedWith(uint256 _matronId, uint256 _sireId) internal {
+        require(_isAbleToBreed(_matronId, _sireId));
 
         // Grab a reference to the Apostles from storage.
         Apostle storage sire = tokenId2Apostle[_sireId];
@@ -346,8 +339,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         matron.siringWithId = _sireId;
 
         // Trigger the cooldown for both parents.
-        _triggerCooldown(_sireId, _owner);
-        _triggerCooldown(_matronId, _owner);
+        _triggerCooldown(_sireId);
+        _triggerCooldown(_matronId);
 
         // Clear siring permission for both parents. This may not be strictly necessary
         // but it's likely to avoid confusion!
@@ -371,7 +364,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         require(ring.transferFrom(msg.sender, address(this), autoBirthFee));
 
         // Call through the normal breeding flow
-        _breedWith(_matronId, _sireId, msg.sender);
+        _breedWith(_matronId, _sireId);
 
         // Emit an AutoBirth message so the autobirth daemon knows when and for what cat to call
         // giveBirth().
@@ -400,8 +393,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         }
         uint sireId = _payAndMix(_matronId, _resourceToken, _level);
 
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(_matronId, owner);
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, owner);
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(_matronId, address(0));
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, address(0));
 
     }
 
@@ -465,7 +458,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             }
 
             // All checks passed, apostle gets pregnant!
-            _breedWith(matronId, sireId, _from);
+            _breedWith(matronId, sireId);
 
             Apostle storage matron = tokenId2Apostle[matronId];
             emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
