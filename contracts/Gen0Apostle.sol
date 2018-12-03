@@ -48,7 +48,7 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
     function createGen0Apostle(uint256 _genes, uint256 _talents) public {
         require(operator == msg.sender, "you have no rights");
         require(gen0Count + 1 <= gen0CreationLimit, 'enough');
-        IApostleBase apostleBase = IApostleBase(registry.addressOf(CONTRACT_MINER));
+        IApostleBase apostleBase = IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE));
         apostleBase.createApostle(0, 0, 0, _genes, _talents, address(this));
         gen0Count++;
     }
@@ -84,9 +84,9 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
 
     function tokenFallback(address _from, uint256 _value, bytes _data) public {
 
-        address ring = registry.addressOf(SettingIds.CONTRACT_RING_ERC20_TOKEN);
-        address kton = registry.addressOf(SettingIds.CONTRACT_KTON_ERC20_TOKEN);
-        address revenuePool = registry.addressOf(ApostleSettingIds.CONTRACT_REVENUE_POOL);
+        address ring = registry.addressOf(CONTRACT_RING_ERC20_TOKEN);
+        address kton = registry.addressOf(CONTRACT_KTON_ERC20_TOKEN);
+        address revenuePool = registry.addressOf(CONTRACT_REVENUE_POOL);
 
         if(msg.sender == ring || msg.sender == kton) {
             ERC223(msg.sender).transfer(revenuePool, _value, _data);

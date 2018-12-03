@@ -166,7 +166,7 @@ contract SiringClockAuction is SiringAuctionBase {
             // Tell the world!
             emit AuctionSuccessful(_sireId, priceInToken, _from);
 
-            require(IApostleBase(registry.addressOf(CONTRACT_MINER)).breedWithInAuction(_sireId, _matronId));
+            require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).breedWithInAuction(_sireId, _matronId));
 
         }
 
