@@ -7,6 +7,7 @@ import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./interfaces/IGeneScience.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "./interfaces/ITokenUse.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -101,6 +102,12 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         registry = ISettingsRegistry(_registry);
     }
 
+    function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
+        uint256 cooldownIndex = tokenId2Apostle[_tokenId].cooldownIndex;
+        return cooldowns[cooldownIndex];
+
+    }
+
     // called by ApostleMinting
     function createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth {
         _createApostle(_matronId, _sireId, _generation, _genes, _talents, _owner);
@@ -173,16 +180,21 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return (matronOwner == sireOwner || sireAllowedToAddress[_sireId] == matronOwner);
     }
 
-    function _triggerCooldown(Apostle storage _aps) internal {
+    function _triggerCooldown(uint256 _tokenId, address _owner) internal {
+
+        Apostle storage aps = tokenId2Apostle[_tokenId];
         // Compute the end of the cooldown time (based on current cooldownIndex)
-        _aps.cooldownEndTime = uint48(now + uint256(cooldowns[_aps.cooldownIndex]));
+        aps.cooldownEndTime = uint48(now + uint256(cooldowns[aps.cooldownIndex]));
 
         // Increment the breeding count, clamping it at 13, which is the length of the
         // cooldowns array. We could check the array size dynamically, but hard-coding
         // this as a constant saves gas. Yay, Solidity!
-        if (_aps.cooldownIndex < 13) {
-            _aps.cooldownIndex += 1;
+        if (aps.cooldownIndex < 13) {
+            aps.cooldownIndex += 1;
         }
+
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).startActivity(_tokenId, _owner);
+
     }
 
     function _isReadyToGiveBirth(Apostle storage _matron) private view returns (bool) {
@@ -334,8 +346,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         matron.siringWithId = _sireId;
 
         // Trigger the cooldown for both parents.
-        _triggerCooldown(sire);
-        _triggerCooldown(matron);
+        _triggerCooldown(_sireId, _owner);
+        _triggerCooldown(_matronId, _owner);
 
         // Clear siring permission for both parents. This may not be strictly necessary
         // but it's likely to avoid confusion!
@@ -386,7 +398,11 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             // will be checked in mixgenes
             ERC20(_resourceToken).transferFrom(msg.sender, address(this), _level * registry.uintOf(UINT_MIX_TALENT));
         }
-        require(_payAndMix(_matronId, _resourceToken, _level));
+        uint sireId = _payAndMix(_matronId, _resourceToken, _level);
+
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(_matronId, owner);
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, owner);
+
     }
 
 
@@ -394,7 +410,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         uint256 _matronId,
         address _resourceToken,
         uint256 _level)
-    internal returns (bool) {
+    internal returns (uint256) {
 
         // Grab a reference to the matron in storage.
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -408,7 +424,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         // Grab a reference to the sire in storage.
         //        uint256 sireId = matron.siringWithId;
         // prevent stack too deep error
-        Apostle storage sire = tokenId2Apostle[matron.siringWithId];
+        uint256 sireId = matron.siringWithId;
+        Apostle storage sire = tokenId2Apostle[sireId];
 
         // Determine the higher generation number of the two parents
         uint16 parentGen = matron.generation;
@@ -419,8 +436,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
         (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
 
-        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-        address owner = objectOwnership.ownerOf(_matronId);
+        address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
         _createApostle(_matronId, matron.siringWithId, parentGen + 1, childGenes, childTalents, owner);
 
@@ -428,7 +444,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         // set is what marks a matron as being pregnant.)
         delete matron.siringWithId;
 
-        return true;
+        return sireId;
     }
 
     function tokenFallback(address _from, uint256 _value, bytes _data) public {
@@ -465,9 +481,17 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
             require(_value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
 
-            require(_payAndMix(matronId, msg.sender, level));
+            sireId = _payAndMix(matronId, msg.sender, level);
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(matronId, owner);
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, owner);
+
+
         }
 
+    }
+
+    function isActivity() public returns (bool) {
+        return true;
     }
 
 
