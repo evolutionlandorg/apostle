@@ -197,7 +197,7 @@ contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
         //  currency (at 128-bits), and ownerCut <= 10000 (see the require()
         //  statement in the ClockAuction constructor). The result of this
         //  function is always guaranteed to be <= _price.
-        uint ownerCut = registry.uintOf(ApostleSettingIds.UINT_AUCTION_CUT);
+        uint ownerCut = registry.uintOf(UINT_AUCTION_CUT);
         return _price * ownerCut / 10000;
     }
 

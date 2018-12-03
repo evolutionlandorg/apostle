@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
-// this is CONTRACT_MINER
+// this is CONTRACT_APOSTLE_BASE
 contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
     event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents);

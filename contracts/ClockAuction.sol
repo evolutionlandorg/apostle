@@ -323,9 +323,9 @@ contract ClockAuction is PausableDSAuth, ApostleSettingIds {
     canBeStoredWith128Bits(_priceInToken)
     returns (uint256, uint256){
 
-        uint auctionCut = registry.uintOf(ApostleSettingIds.UINT_AUCTION_CUT);
-        uint256 refererCut = registry.uintOf(ApostleSettingIds.UINT_REFERER_CUT);
-        address revenuePool = registry.addressOf(ApostleSettingIds.CONTRACT_REVENUE_POOL);
+        uint auctionCut = registry.uintOf(UINT_AUCTION_CUT);
+        uint256 refererCut = registry.uintOf(UINT_REFERER_CUT);
+        address revenuePool = registry.addressOf(CONTRACT_REVENUE_POOL);
 
         // uint256 refererBounty;
 
@@ -452,7 +452,7 @@ contract ClockAuction is PausableDSAuth, ApostleSettingIds {
     returns (bytes4) {
         // owner can put apostle on market
         // after coolDownEndTime
-        if(IApostleBase(registry.addressOf(CONTRACT_MINER)).isReadyToBreed(_tokenId)) {
+        if(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId)) {
             return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
         }
     }
