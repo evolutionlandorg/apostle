@@ -133,6 +133,7 @@ contract SiringClockAuction is SiringAuctionBase {
         // safer for users
         require (msg.sender == tokenIdToAuction[sireId].token);
         require(tokenIdToAuction[sireId].startedAt > 0);
+        require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).canBreedWithViaAuction(matronId, sireId));
 
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
         _bidWithToken(_from, sireId, matronId, _valueInToken, autoBirthFee);
@@ -166,8 +167,7 @@ contract SiringClockAuction is SiringAuctionBase {
             // Tell the world!
             emit AuctionSuccessful(_sireId, priceInToken, _from);
 
-            require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).breedWithInAuction(_sireId, _matronId));
-
+            require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).breedWithInAuction(_from, _sireId, _matronId));
         }
 
         return priceInToken;
@@ -182,12 +182,18 @@ contract SiringClockAuction is SiringAuctionBase {
     function onERC721Received(
         address, //_operator,
         address, //_from,
-        uint256, // _tokenId,
+        uint256 _tokenId,
         bytes //_data
     )
     public
     returns (bytes4) {
-        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+
+        // owner can put apostle onto siring market
+        // after coolDownEndTime
+        if(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId)) {
+            return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+        }
+
     }
 
 

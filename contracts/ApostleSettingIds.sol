@@ -17,4 +17,9 @@ contract ApostleSettingIds is SettingIds {
 
     bytes32 public constant CONTRACT_GEN0_APOSTLE_AUCTION = "CONTRACT_GEN0_APOSTLE_AUCTION";
 
+    // when player wants to buy their apostle some talents
+    // the minimum or unit they need to pay
+    bytes32 public constant UINT_MIX_TALENT = "UINT_MIX_TALENT";
+
+    bytes32 public constant UINT_APOSTLE_BID_WAITING_TIME = "UINT_APOSTLE_BID_WAITING_TIME";
 }
