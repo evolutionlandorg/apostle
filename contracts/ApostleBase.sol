@@ -7,6 +7,7 @@ import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./interfaces/IGeneScience.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_MINER
@@ -173,16 +174,21 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         return (matronOwner == sireOwner || sireAllowedToAddress[_sireId] == matronOwner);
     }
 
-    function _triggerCooldown(Apostle storage _aps) internal {
+    function _triggerCooldown(uint256 _tokenId, address _owner) internal {
+
+        Apostle storage aps = tokenId2Apostle[_tokenId];
         // Compute the end of the cooldown time (based on current cooldownIndex)
-        _aps.cooldownEndTime = uint48(now + uint256(cooldowns[_aps.cooldownIndex]));
+        aps.cooldownEndTime = uint48(now + uint256(cooldowns[aps.cooldownIndex]));
 
         // Increment the breeding count, clamping it at 13, which is the length of the
         // cooldowns array. We could check the array size dynamically, but hard-coding
         // this as a constant saves gas. Yay, Solidity!
-        if (_aps.cooldownIndex < 13) {
-            _aps.cooldownIndex += 1;
+        if (aps.cooldownIndex < 13) {
+            aps.cooldownIndex += 1;
         }
+
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).startActivity(_tokenId, )
+
     }
 
     function _isReadyToGiveBirth(Apostle storage _matron) private view returns (bool) {
@@ -334,8 +340,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         matron.siringWithId = _sireId;
 
         // Trigger the cooldown for both parents.
-        _triggerCooldown(sire);
-        _triggerCooldown(matron);
+        _triggerCooldown(_sireId, _owner);
+        _triggerCooldown(_matronId, _owner);
 
         // Clear siring permission for both parents. This may not be strictly necessary
         // but it's likely to avoid confusion!
@@ -468,6 +474,10 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             require(_payAndMix(matronId, msg.sender, level));
         }
 
+    }
+
+    function isActivity() public returns (bool) {
+        return true;
     }
 
 
