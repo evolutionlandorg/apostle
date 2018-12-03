@@ -5,6 +5,7 @@ import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IApostleBase.sol";
+import "./interfaces/ITokenUse.sol";
 
 /// @title Clock auction for non-fungible tokens.
 contract SiringClockAuction is SiringAuctionBase {
@@ -34,7 +35,7 @@ contract SiringClockAuction is SiringAuctionBase {
     ///  be called while the contract is paused.
     /// @param _tokenId - ID of token on auction
     function cancelAuction(uint256 _tokenId)
-        public
+    public
     {
         Auction storage auction = tokenIdToAuction[_tokenId];
         require(_isOnAuction(auction));
@@ -48,9 +49,9 @@ contract SiringClockAuction is SiringAuctionBase {
     ///  the seller. This should only be used in emergencies.
     /// @param _tokenId - ID of the NFT on auction to cancel.
     function cancelAuctionWhenPaused(uint256 _tokenId)
-        whenPaused
-        onlyOwner
-        public
+    whenPaused
+    onlyOwner
+    public
     {
         Auction storage auction = tokenIdToAuction[_tokenId];
         require(_isOnAuction(auction));
@@ -60,9 +61,9 @@ contract SiringClockAuction is SiringAuctionBase {
     /// @dev Returns auction info for an NFT on auction.
     /// @param _tokenId - ID of NFT on auction.
     function getAuction(uint256 _tokenId)
-        public
-        view
-        returns
+    public
+    view
+    returns
     (
         address seller,
         uint256 startingPrice,
@@ -74,21 +75,21 @@ contract SiringClockAuction is SiringAuctionBase {
         Auction storage auction = tokenIdToAuction[_tokenId];
         require(_isOnAuction(auction));
         return (
-            auction.seller,
-            uint256(auction.startingPriceInToken),
-            uint256(auction.endingPriceInToken),
-            uint256(auction.duration),
-            uint256(auction.startedAt),
-            auction.token
+        auction.seller,
+        uint256(auction.startingPriceInToken),
+        uint256(auction.endingPriceInToken),
+        uint256(auction.duration),
+        uint256(auction.startedAt),
+        auction.token
         );
     }
 
     /// @dev Returns the current price of an auction.
     /// @param _tokenId - ID of the token price we are checking.
     function getCurrentPriceInToken(uint256 _tokenId)
-        public
-        view
-        returns (uint256)
+    public
+    view
+    returns (uint256)
     {
         Auction storage auction = tokenIdToAuction[_tokenId];
         require(_isOnAuction(auction));
@@ -131,51 +132,58 @@ contract SiringClockAuction is SiringAuctionBase {
             matronId := mload(add(ptr, 164))
         }
         // safer for users
-        require (msg.sender == tokenIdToAuction[sireId].token);
+        require(msg.sender == tokenIdToAuction[sireId].token);
         require(tokenIdToAuction[sireId].startedAt > 0);
         require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).canBreedWithViaAuction(matronId, sireId));
 
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
-        _bidWithToken(_from, sireId, matronId, _valueInToken, autoBirthFee);
-    }
 
+        // Check that the incoming bid is higher than the current price
+        uint priceInToken = getCurrentPriceInToken(sireId);
 
-    function _bidWithToken(address _from, uint256 _sireId, uint256 _matronId, uint256 _valueInToken, uint256 _autoBirthFee) internal returns (uint256) {
-        // Get a reference to the auction struct
-        Auction storage auction = tokenIdToAuction[_sireId];
+        require(_valueInToken >= priceInToken + autoBirthFee,
+            "your offer is lower than the current price, try again with a higher one.");
+        Auction storage auction = tokenIdToAuction[sireId];
         require(now >= uint256(auction.startedAt), "you cant bid before the auction starts.");
 
         address seller = auction.seller;
 
-        // Check that the incoming bid is higher than the current price
-        uint priceInToken = getCurrentPriceInToken(_sireId);
-
-        require(_valueInToken >= priceInToken + _autoBirthFee,
-            "your offer is lower than the current price, try again with a higher one.");
-        uint refund = _valueInToken - priceInToken - _autoBirthFee;
+        _removeAuction(sireId);
+        uint refund = _valueInToken - priceInToken - autoBirthFee;
         if (refund > 0) {
             ERC20(auction.token).transfer(_from, refund);
         }
 
-        if(priceInToken > 0) {
-            uint256 ownerCutAmount = _computeCut(priceInToken);
-            ERC223(auction.token).transfer(auction.seller, (priceInToken - ownerCutAmount), toBytes(_from));
-
-            _removeAuction(_sireId);
-            ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), seller, _sireId);
-
-            // Tell the world!
-            emit AuctionSuccessful(_sireId, priceInToken, _from);
-
-            require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).breedWithInAuction(_from, _sireId, _matronId));
+        if (priceInToken > 0) {
+            _bidWithToken(auction, _from, seller, sireId, matronId, priceInToken);
         }
+    }
 
-        return priceInToken;
+
+    function _bidWithToken(Auction storage _auction, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken) internal {
+
+
+        //uint256 ownerCutAmount = _computeCut(priceInToken);
+        ERC223(_auction.token).transfer(_seller, (_priceInToken - _computeCut(_priceInToken)), toBytes(_from));
+
+        ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), _seller, _sireId);
+
+        uint coolDownDuration = IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).getCooldownDuration(_sireId);
+
+        address apostleBase = registry.addressOf(CONTRACT_APOSTLE_BASE);
+
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).registerTokenStatus(_sireId, _seller, _from, now, now + coolDownDuration, _priceInToken, apostleBase);
+
+        require(IApostleBase(apostleBase).breedWithInAuction(_from, _sireId, _matronId));
+
+        // Tell the world!
+        emit AuctionSuccessful(_sireId, _priceInToken, _from);
+
     }
 
     function toBytes(address x) public pure returns (bytes b) {
         b = new bytes(32);
-        assembly { mstore(add(b, 32), x) }
+        assembly {mstore(add(b, 32), x)}
     }
 
     // to apply for the safeTransferFrom
@@ -190,13 +198,11 @@ contract SiringClockAuction is SiringAuctionBase {
 
         // owner can put apostle onto siring market
         // after coolDownEndTime
-        if(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId)) {
+        if (IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId)) {
             return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
         }
 
     }
-
-
 
 
 }
