@@ -1,11 +1,11 @@
 pragma solidity ^0.4.18;
 
-import "./SiringAuctionBase.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/interfaces/ERC223.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 import "./interfaces/IApostleBase.sol";
-import "./interfaces/ITokenUse.sol";
+import "./SiringAuctionBase.sol";
 
 /// @title Clock auction for non-fungible tokens.
 contract SiringClockAuction is SiringAuctionBase {
@@ -161,18 +161,12 @@ contract SiringClockAuction is SiringAuctionBase {
 
 
     function _bidWithToken(Auction storage _auction, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken) internal {
-
-
         //uint256 ownerCutAmount = _computeCut(priceInToken);
         ERC223(_auction.token).transfer(_seller, (_priceInToken - _computeCut(_priceInToken)), toBytes(_from));
 
         ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), _seller, _sireId);
 
-        uint coolDownDuration = IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).getCooldownDuration(_sireId);
-
         address apostleBase = registry.addressOf(CONTRACT_APOSTLE_BASE);
-
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).registerTokenStatus(_sireId, _seller, _from, now, now + coolDownDuration, _priceInToken, apostleBase);
 
         require(IApostleBase(apostleBase).breedWithInAuction(_from, _sireId, _matronId));
 

@@ -1,13 +1,13 @@
 pragma solidity ^0.4.24;
 
-import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
-import "@evolutionland/common/contracts/PausableDSAuth.sol";
-import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
-import "./ApostleSettingIds.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
-import "./interfaces/IGeneScience.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/ITokenUse.sol";
+import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
+import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
+import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
+import "@evolutionland/common/contracts/PausableDSAuth.sol";
+import "./ApostleSettingIds.sol";
+import "./interfaces/IGeneScience.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -288,7 +288,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     }
 
 
-    function _isAbleToBreed(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId, address _owner) internal returns (bool){
+    function _isAbleToBreed(ERC721 _objectOwnership, uint256 _matronId, uint256 _sireId, address _owner) internal view returns (bool){
         // Caller must own the matron.
         require(_objectOwnership.ownerOf(_matronId) == _owner);
 
