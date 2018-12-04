@@ -126,7 +126,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, PausableDSAuth, 
     function _createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint256) {
 
         require(_generation <= 65535);
-        uint256 coolDownIndex = _generation / 3;
+        uint256 coolDownIndex = _generation / 2;
         if (coolDownIndex > 13) {
             coolDownIndex = 13;
         }
