@@ -116,6 +116,10 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
     function _createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint256) {
 
         require(_generation <= 65535);
+        uint256 coolDownIndex = _generation / 3;
+        if (coolDownIndex > 13) {
+            coolDownIndex = 13;
+        }
 
         Apostle memory apostle = Apostle({
             genes : _genes,
@@ -125,7 +129,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             matronId : _matronId,
             sireId : _sireId,
             siringWithId : 0,
-            cooldownIndex : 0,
+            cooldownIndex : uint16(coolDownIndex),
             generation : uint16(_generation)
             });
 
@@ -472,7 +476,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
                 level := mload(add(ptr, 164))
             }
 
-            require(_value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
+            require(level > 0 && _value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
 
             sireId = _payAndMix(matronId, msg.sender, level);
             ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(matronId, owner);
