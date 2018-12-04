@@ -24,7 +24,7 @@
   "homepage": "https://github.com/evolutionlandorg/apostle#readme",
   "dependencies": {
     "@evolutionland/common": "^1.4.20",
-    "openzeppelin-solidity": "^2.0.0"
+    "openzeppelin-solidity": "^1.12.0"
 
   }
 }
