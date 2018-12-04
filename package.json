@@ -1,6 +1,6 @@
 {
   "name": "@evolutionland/apostle",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Apostle contracts for Evolution Land",
   "main": "truffle-config.js",
   "directories": {
@@ -23,8 +23,7 @@
   },
   "homepage": "https://github.com/evolutionlandorg/apostle#readme",
   "dependencies": {
-    "@evolutionland/common": "^1.4.20",
-    "openzeppelin-solidity": "^2.0.0"
-
+    "@evolutionland/common": "^1.5.2",
+    "openzeppelin-solidity": "^1.12.0"
   }
 }

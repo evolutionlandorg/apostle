@@ -9,15 +9,13 @@ import "@evolutionland/common/contracts/interfaces/IMinerObject.sol";
 import "@evolutionland/common/contracts/interfaces/IActivityObject.sol";
 import "@evolutionland/common/contracts/interfaces/IActivity.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
+import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
-import "@evolutionland/common/contracts/interfaces/IActivity.sol";
-import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
-import "@evolutionland/common/contracts/interfaces/IMiner.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
-contract ApostleBase is SupportsInterfaceWithLookup, IActivity, PausableDSAuth, ApostleSettingIds, IMiner {
+contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
     event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents);
     event Pregnant(uint256 matronId, uint256 sireId);
@@ -110,6 +108,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, PausableDSAuth, 
         registry = ISettingsRegistry(_registry);
 
         _registerInterface(InterfaceId_IActivity);
+        _registerInterface(InterfaceId_IActivityObject);
+        _registerInterface(InterfaceId_IMinerObject);
     }
 
     function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
@@ -499,16 +499,11 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, PausableDSAuth, 
 
     }
 
+    /// IMinerObject
     function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
         uint talents = tokenId2Apostle[_tokenId].talents;
         uint strength = geneScience.getStrength(talents, _resourceToken);
         return strength;
-
-    }
-
-    /// IMinerObject
-    function strengthOf(uint256 _tokenId) public returns (uint) {
-        return tokenId2Apostle[_tokenId].talents;
     }
 
     /// IActivityObject
