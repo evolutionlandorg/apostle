@@ -25,5 +25,6 @@
   "dependencies": {
     "@evolutionland/common": "^1.4.20",
     "openzeppelin-solidity": "^2.0.0"
+
   }
 }
