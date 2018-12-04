@@ -8,6 +8,7 @@ import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IApostleBase.sol";
+import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 
 contract ClockAuction is PausableDSAuth, ApostleSettingIds {
     using SafeMath for *;
@@ -505,7 +506,7 @@ contract ClockAuction is PausableDSAuth, ApostleSettingIds {
         // at least one minute. (Keeps our math from getting hairy!)
         require(_duration >= 1 minutes, "duration must be at least 1 minutes");
         require(_duration <= 1000 days);
-
+        require(ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).isObjectReadyToUse(_tokenId), "it is still in use.");
         // escrow
         ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).safeTransferFrom(_from, this, _tokenId);
 

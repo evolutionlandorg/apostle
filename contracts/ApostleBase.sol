@@ -55,20 +55,20 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     uint32[14] public cooldowns = [
-        uint32(1 minutes),
-        uint32(2 minutes),
-        uint32(5 minutes),
-        uint32(10 minutes),
-        uint32(30 minutes),
-        uint32(1 hours),
-        uint32(2 hours),
-        uint32(4 hours),
-        uint32(8 hours),
-        uint32(16 hours),
-        uint32(1 days),
-        uint32(2 days),
-        uint32(4 days),
-        uint32(7 days)
+    uint32(1 minutes),
+    uint32(2 minutes),
+    uint32(5 minutes),
+    uint32(10 minutes),
+    uint32(30 minutes),
+    uint32(1 hours),
+    uint32(2 hours),
+    uint32(4 hours),
+    uint32(8 hours),
+    uint32(16 hours),
+    uint32(1 days),
+    uint32(2 days),
+    uint32(4 days),
+    uint32(7 days)
     ];
 
 
@@ -135,8 +135,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
             genes : _genes,
             talents : _talents,
             birthTime : uint48(now),
-            activeTime: 0,
-            deadTime: 0,
+            activeTime : 0,
+            deadTime : 0,
             cooldownEndTime : 0,
             matronId : _matronId,
             sireId : _sireId,
@@ -401,13 +401,25 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     whenNotPaused
     {
 
+        Apostle storage matron = tokenId2Apostle[_matronId];
+        uint256 sireId = matron.siringWithId;
+        Apostle storage sire = tokenId2Apostle[sireId];
+
+        if(msg.sender == ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(sireId)) {
+            require(_isReadyToBreed(sire));
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
+            return;
+        }
+
         if (_resourceToken != address(0)) {
             // users must approve enough resourceToken to this contract
             // if _resourceToken is registered
             // will be checked in mixgenes
             ERC20(_resourceToken).transferFrom(msg.sender, address(this), _level * registry.uintOf(UINT_MIX_TALENT));
         }
-        uint sireId = _payAndMix(_matronId, _resourceToken, _level);
+
+
+        require(_payAndMix(_matronId, sire, _resourceToken, _level));
 
         ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(_matronId, address(0));
         ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
@@ -417,9 +429,10 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     function _payAndMix(
         uint256 _matronId,
+        Apostle storage _sire,
         address _resourceToken,
         uint256 _level)
-    internal returns (uint256) {
+    internal returns (bool) {
 
         // Grab a reference to the matron in storage.
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -433,17 +446,16 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         // Grab a reference to the sire in storage.
         //        uint256 sireId = matron.siringWithId;
         // prevent stack too deep error
-        uint256 sireId = matron.siringWithId;
-        Apostle storage sire = tokenId2Apostle[sireId];
+        //        Apostle storage sire = tokenId2Apostle[matron.siringWithId];
 
         // Determine the higher generation number of the two parents
         uint16 parentGen = matron.generation;
-        if (sire.generation > matron.generation) {
-            parentGen = sire.generation;
+        if (_sire.generation > matron.generation) {
+            parentGen = _sire.generation;
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
+        (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, _sire.genes, matron.talents, _sire.talents, _resourceToken, _level);
 
         address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
@@ -453,7 +465,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         // set is what marks a matron as being pregnant.)
         delete matron.siringWithId;
 
-        return sireId;
+        return true;
     }
 
     function tokenFallback(address _from, uint256 _value, bytes _data) public {
@@ -462,6 +474,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         uint matronId;
         uint sireId;
         uint level;
+        Apostle storage matron;
 
         if (msg.sender == registry.addressOf(CONTRACT_RING_ERC20_TOKEN)) {
             require(_value >= autoBirthFee, 'not enough to breed.');
@@ -476,7 +489,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
             // All checks passed, apostle gets pregnant!
             _breedWith(matronId, sireId);
 
-            Apostle storage matron = tokenId2Apostle[matronId];
+            matron = tokenId2Apostle[matronId];
             emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
 
         } else {
@@ -490,9 +503,13 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
             require(level > 0 && _value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
 
-            sireId = _payAndMix(matronId, msg.sender, level);
+            matron = tokenId2Apostle[matronId];
+            sireId = matron.siringWithId;
+            Apostle storage sire = tokenId2Apostle[sireId];
+
+            require(_payAndMix(matronId, sire, msg.sender, level));
             ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(matronId, owner);
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, owner);
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
 
 
         }
@@ -509,7 +526,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     /// IActivityObject
     function activityAdded(uint256 _tokenId, address _activity, address _user) auth public {
         // to active the apostle when it do activity the first time
-        if ( tokenId2Apostle[_tokenId].activeTime == 0 ) {
+        if (tokenId2Apostle[_tokenId].activeTime == 0) {
             tokenId2Apostle[_tokenId].activeTime = uint48(now);
         }
     }
