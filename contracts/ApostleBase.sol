@@ -5,6 +5,9 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
+import "@evolutionland/common/contracts/interfaces/IMinerObject.sol";
+import "@evolutionland/common/contracts/interfaces/IActivityObject.sol";
+import "@evolutionland/common/contracts/interfaces/IActivity.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
@@ -45,6 +48,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         uint16 generation;
 
         uint48 birthTime;
+        uint48 activeTime;
+        uint48 deadTime;
         uint48 cooldownEndTime;
     }
 
@@ -121,6 +126,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             genes : _genes,
             talents : _talents,
             birthTime : uint48(now),
+            activeTime: 0,
+            deadTime: 0,
             cooldownEndTime : 0,
             matronId : _matronId,
             sireId : _sireId,
@@ -194,7 +201,7 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         }
 
         // address(0) meaning use by its owner or whitelisted contract
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).startActivity(_tokenId, address(0));
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).addActivity(_tokenId, address(0));
 
     }
 
@@ -393,8 +400,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         }
         uint sireId = _payAndMix(_matronId, _resourceToken, _level);
 
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(_matronId, address(0));
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, address(0));
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(_matronId, address(0));
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
 
     }
 
@@ -475,19 +482,35 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
             require(_value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
 
             sireId = _payAndMix(matronId, msg.sender, level);
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(matronId, owner);
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).stopActivity(sireId, owner);
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(matronId, owner);
+            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, owner);
 
 
         }
 
     }
 
-    function isActivity() public returns (bool) {
-        return true;
+    /// IMinerObject
+    function strengthOf(uint256 _tokenId) public returns (uint) {
+        return tokenId2Apostle[_tokenId].talents;
     }
 
+    /// IActivityObject
+    function activityAdded(uint256 _tokenId, address _activity, address _user) auth public {
+        // to active the apostle when it do activity the first time
+        if ( tokenId2Apostle[_tokenId].activeTime == 0 ) {
+            tokenId2Apostle[_tokenId].activeTime = uint48(now);
+        }
+    }
 
+    function activityRemoved(uint256 _tokenId, address _activity, address _user) auth public {
+        // do nothing.
+    }
+
+    /// IActivity
+    function activityStopped(uint256 _tokenId) auth public {
+        // do nothing.
+    }
 }
 
 
