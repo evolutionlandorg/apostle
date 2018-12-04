@@ -8,10 +8,13 @@ import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
+import "@evolutionland/common/contracts/interfaces/IActivity.sol";
+import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
+import "@evolutionland/common/contracts/interfaces/IMiner.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
-contract ApostleBase is PausableDSAuth, ApostleSettingIds {
+contract ApostleBase is SupportsInterfaceWithLookup, IActivity, PausableDSAuth, ApostleSettingIds, IMiner {
 
     event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents);
     event Pregnant(uint256 matronId, uint256 sireId);
@@ -100,6 +103,8 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
         emit LogSetOwner(msg.sender);
 
         registry = ISettingsRegistry(_registry);
+
+        _registerInterface(InterfaceId_IActivity);
     }
 
     function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
@@ -487,10 +492,14 @@ contract ApostleBase is PausableDSAuth, ApostleSettingIds {
 
     }
 
-    function isActivity() public returns (bool) {
-        return true;
-    }
 
+    function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
+        uint talents = tokenId2Apostle[_tokenId].talents;
+        uint strength = geneScience.getStrength(talents, _resourceToken);
+        return strength;
+
+
+    }
 
 }
 
