@@ -22,4 +22,7 @@ contract ApostleSettingIds is SettingIds {
     bytes32 public constant UINT_MIX_TALENT = "UINT_MIX_TALENT";
 
     bytes32 public constant UINT_APOSTLE_BID_WAITING_TIME = "UINT_APOSTLE_BID_WAITING_TIME";
+
+    /// Denominator is 100000000
+    bytes32 public constant UINT_HABERG_POTION_TAX_RATE = "UINT_HABERG_POTION_TAX_RATE";
 }
