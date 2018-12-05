@@ -17,7 +17,7 @@ import "./interfaces/IGeneScience.sol";
 // this is CONTRACT_APOSTLE_BASE
 contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
-    event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents);
+    event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex);
     event Pregnant(uint256 matronId, uint256 sireId);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
@@ -93,13 +93,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     mapping(uint256 => address) public sireAllowedToAddress;
 
-
-    /// @dev The address of the sibling contract that is used to implement the sooper-sekret
-    ///  genetic combination algorithm.
-    // TODO: put this into registry
-    IGeneScience public geneScience;
-
-
     function initializeContract(address _registry) public singletonLockCall {
         // Ownable constructor
         owner = msg.sender;
@@ -151,7 +144,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         tokenId2Apostle[tokenId] = apostle;
 
-        emit Birth(_owner, lastApostleObjectId, apostle.matronId, apostle.sireId, apostle.genes, _talents);
+        emit Birth(_owner, lastApostleObjectId, apostle.matronId, apostle.sireId, _genes, _talents, uint256(coolDownIndex));
 
         return tokenId;
     }
@@ -455,7 +448,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (uint256 childGenes, uint256 childTalents) = geneScience.mixGenesAndTalents(matron.genes, _sire.genes, matron.talents, _sire.talents, _resourceToken, _level);
+        (uint256 childGenes, uint256 childTalents) = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, _sire.genes, matron.talents, _sire.talents, _resourceToken, _level);
 
         address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
@@ -519,7 +512,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     /// IMinerObject
     function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
         uint talents = tokenId2Apostle[_tokenId].talents;
-        uint strength = geneScience.getStrength(talents, _resourceToken);
+        uint strength = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).getStrength(talents, _resourceToken);
         return strength;
     }
 

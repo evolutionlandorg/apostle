@@ -62,7 +62,7 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
         address _token)
     public {
         require(operator == msg.sender, "you have no rights");
-        IClockAuction auction = IClockAuction(registry.addressOf(ApostleSettingIds.CONTRACT_GEN0_APOSTLE_AUCTION));
+        IClockAuction auction = IClockAuction(registry.addressOf(ApostleSettingIds.CONTRACT_APOSTLE_AUCTION));
 
         // aprove land to auction contract
         ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).approve(address(auction), _tokenId);
@@ -73,7 +73,7 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
     }
 
     function cancelAuction(uint256 _tokenId) public onlyOwner {
-        IClockAuction auction = IClockAuction(registry.addressOf(ApostleSettingIds.CONTRACT_GEN0_APOSTLE_AUCTION));
+        IClockAuction auction = IClockAuction(registry.addressOf(ApostleSettingIds.CONTRACT_APOSTLE_AUCTION));
         auction.cancelAuction(_tokenId);
     }
 
