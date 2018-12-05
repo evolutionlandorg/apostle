@@ -12,6 +12,7 @@ import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
+import "./interfaces/IHabergPotionShop.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -55,20 +56,20 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     uint32[14] public cooldowns = [
-    uint32(1 minutes),
-    uint32(2 minutes),
-    uint32(5 minutes),
-    uint32(10 minutes),
-    uint32(30 minutes),
-    uint32(1 hours),
-    uint32(2 hours),
-    uint32(4 hours),
-    uint32(8 hours),
-    uint32(16 hours),
-    uint32(1 days),
-    uint32(2 days),
-    uint32(4 days),
-    uint32(7 days)
+        uint32(1 minutes),
+        uint32(2 minutes),
+        uint32(5 minutes),
+        uint32(10 minutes),
+        uint32(30 minutes),
+        uint32(1 hours),
+        uint32(2 hours),
+        uint32(4 hours),
+        uint32(8 hours),
+        uint32(16 hours),
+        uint32(1 days),
+        uint32(2 days),
+        uint32(4 days),
+        uint32(7 days)
     ];
 
 
@@ -507,6 +508,29 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         }
 
+    }
+
+    /// Anyone can try to kill this Apostle;
+    function KillApostle(uint256 _tokenId) public {
+        require(tokenId2Apostle[_tokenId].activeTime > 0);
+        require(defaultLifeTime(_tokenId) < now);
+
+        address habergPotionShop = registry.addressOf(CONTRACT_HABERG_POTION_SHOP);
+        IHabergPotionShop(habergPotionShop).tryKillApostle(_tokenId, msg.sender);
+    }
+
+    function isDead(uint256 _tokenId) public view returns (bool) {
+        return tokenId2Apostle[_tokenId].birthTime > 0 && tokenId2Apostle[_tokenId].deadTime > 0;
+    }
+
+    function defaultLifeTime(uint256 _tokenId) public view returns (uint256) {
+        uint256 start = tokenId2Apostle[_tokenId].birthTime;
+
+        if (tokenId2Apostle[_tokenId].activeTime > 0) {
+            start = tokenId2Apostle[_tokenId].activeTime;
+        }
+
+        return start + (tokenId2Apostle[_tokenId].talents >> 248) * (1 weeks);
     }
 
     /// IMinerObject
