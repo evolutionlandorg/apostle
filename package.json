@@ -24,6 +24,7 @@
   "homepage": "https://github.com/evolutionlandorg/apostle#readme",
   "dependencies": {
     "@evolutionland/common": "^1.5.2",
-    "openzeppelin-solidity": "^1.12.0"
+    "openzeppelin-solidity": "^1.12.0",
+    "@evolutionland/upgraeability-using-unstructured-storage": "^0.1.1"
   }
 }

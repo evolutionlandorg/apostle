@@ -1,4 +1,9 @@
 pragma solidity ^0.4.23;
+import "@evolutionland/common/contracts/ObjectOwnershipAuthority.sol";
+import '@evolutionland/common/contracts/SettingsRegistry.sol';
+import "@evolutionland/common/contracts/ObjectOwnership.sol";
+import "@evolutionland/common/contracts/InterstellarEncoderV2.sol";
+import "@evolutionland/upgraeability-using-unstructured-storage/contracts/OwnedUpgradeabilityProxy.sol";
 
 contract Migrations {
   address public owner;
