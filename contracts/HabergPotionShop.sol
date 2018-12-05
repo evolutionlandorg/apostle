@@ -8,6 +8,7 @@ import "@evolutionland/common/contracts/interfaces/IBurnableERC20.sol";
 import "@evolutionland/common/contracts/interfaces/IMintableERC20.sol";
 import "@evolutionland/common/contracts/DSAuth.sol";
 import "./ApostleSettingIds.sol";
+import "./interfaces/IApostleBase.sol";
 
 contract  HabergPotionShop is DSAuth, ApostleSettingIds {
     using SafeMath for *;
@@ -30,10 +31,11 @@ contract  HabergPotionShop is DSAuth, ApostleSettingIds {
      */
     struct PotionState {
         uint256 estimatePrice;
-        uint256 boughtLifeTime;
         uint256 availablePotionFund;
+        uint48 startTime;
+        uint48 boughtLifeTime;
+        uint48 lastUpdateTime;
         bool isDead;
-        uint256 lastUpdateTime;
     }
 
     mapping (uint256 => PotionState) public tokenId2PotionState;
@@ -72,6 +74,10 @@ contract  HabergPotionShop is DSAuth, ApostleSettingIds {
         require(
             ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_tokenId) == msg.sender, "Only apostle owner can start Potion model.");
 
+        
+        address apostleBase = registry.addressOf(CONTRACT_APOSTLE_BASE);
+        require(!(IApostleBase(apostleBase).isDead(_tokenId)), "Apostle is dead, can not start Haberg.");
+
         require(tokenId2PotionState[_tokenId].lastUpdateTime == 0, "Potion model should not started yet.");
         require(_estimatePrice > 0, "Apostle estimated price must larger than zero.");
 
@@ -79,20 +85,43 @@ contract  HabergPotionShop is DSAuth, ApostleSettingIds {
 
         tokenId2PotionState[_tokenId] = PotionState({
             estimatePrice: _estimatePrice,
-            boughtLifeTime: 0,
             availablePotionFund: _ringAmount,
-            isDead: false,
-            lastUpdateTime: now
+            startTime: uint48(IApostleBase(apostleBase).defaultLifeTime(_tokenId)),
+            boughtLifeTime: 0,
+            lastUpdateTime: uint48(now),
+            isDead: false
         });
+    }
+
+    function tryKillApostle(uint256 _tokenId, address _killer) public auth {
+        if (tokenId2PotionState[_tokenId].lastUpdateTime == 0) {
+            // didn't start hargberg or already exited.
+            return;
+        } else if (tokenId2PotionState[_tokenId].isDead) {
+            return;
+        } else {
+            uint256 currentHarbergLifeTime = harbergLifeTime(_tokenId);
+            require(currentHarbergLifeTime < now);
+
+            tokenId2PotionState[_tokenId].isDead = true;
+            tokenId2PotionState[_tokenId].boughtLifeTime += uint48(currentHarbergLifeTime - tokenId2PotionState[_tokenId].startTime);
+            tokenId2PotionState[_tokenId].availablePotionFund = 0;
+            tokenId2PotionState[_tokenId].lastUpdateTime = uint48(now);
+        }
     }
 
     // deposit haberg tax
     function buyPotion(uint256 _tokenId, uint256 _ringAmount) public {
         require(ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_tokenId) == msg.sender, "Only apostle owner can buy potion.");
+
+        _buyPotion(msg.sender, _tokenId, _ringAmount);
+    }
+
+    function _buyPotion(address _payer, uint256 _tokenId, uint256 _ringAmount) internal {
         require(tokenId2PotionState[_tokenId].lastUpdateTime > 0, "Potion model does not exist.");
         require(!tokenId2PotionState[_tokenId].isDead, "Apostle must not be dead.");
 
-        ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN)).transferFrom(msg.sender, address(this), _ringAmount);
+        ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN)).transferFrom(_payer, address(this), _ringAmount);
 
         tokenId2PotionState[_tokenId].availablePotionFund += _ringAmount;
     }
@@ -110,15 +139,18 @@ contract  HabergPotionShop is DSAuth, ApostleSettingIds {
     function _updateHabergPotionState(uint256 _tokenId) internal {
         uint256 newBoughtLifeTime = now - tokenId2PotionState[_tokenId].lastUpdateTime;
 
-        tokenId2PotionState[_tokenId].availablePotionFund = tokenId2PotionState[_tokenId].availablePotionFund.sub(
-            tokenId2PotionState[_tokenId].estimatePrice.mul(registry.uintOf(UINT_HABERG_POTION_TAX_RATE)).div(100000000).mul(newBoughtLifeTime).div(1 days)
-        );
+        uint256 usedPotionFund = tokenId2PotionState[_tokenId].estimatePrice
+            .mul(registry.uintOf(UINT_HABERG_POTION_TAX_RATE)).div(100000000)
+            .mul(newBoughtLifeTime).div(1 days);
 
-        tokenId2PotionState[_tokenId].boughtLifeTime += newBoughtLifeTime;
+        tokenId2PotionState[_tokenId].availablePotionFund = tokenId2PotionState[_tokenId].availablePotionFund.sub(usedPotionFund);
 
-        tokenId2PotionState[_tokenId].lastUpdateTime = now;
+        tokenId2PotionState[_tokenId].boughtLifeTime = uint48(tokenId2PotionState[_tokenId].boughtLifeTime + newBoughtLifeTime);
+
+        tokenId2PotionState[_tokenId].lastUpdateTime = uint48(now);
     }
 
+    /// stop Haberg will kill the apostle
     function stopHabergAndWithdrawFunds(uint256 _tokenId) public {
         require(ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_tokenId) == msg.sender, "Only apostle owner can call this.");
         require(tokenId2PotionState[_tokenId].lastUpdateTime > 0, "Potion model does not exist.");
@@ -138,22 +170,31 @@ contract  HabergPotionShop is DSAuth, ApostleSettingIds {
         require(!tokenId2PotionState[_tokenId].isDead, "Apostle must not be dead.");
 
         address tokenOwner = ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_tokenId);
+
+        uint256 oldAvailablePotionFund = tokenId2PotionState[_tokenId].availablePotionFund;
+
+        /// new owner must make up the potion fee if the old owner didn't pay enough
+        _buyPotion(msg.sender, _tokenId, _depositPotionFee);
+
+        _updateHabergPotionState(_tokenId);
+
+        uint256 usedFund = oldAvailablePotionFund + _depositPotionFee - tokenId2PotionState[_tokenId].availablePotionFund;
+
+        if (oldAvailablePotionFund > usedFund) {
+            ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN)).transferFrom(
+                address(this), tokenOwner, (oldAvailablePotionFund - usedFund)
+            );
+        }
+
         ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN)).transferFrom(
             msg.sender, tokenOwner, tokenId2PotionState[_tokenId].estimatePrice);
 
         // must approve this first, if not, others can kill this apostle in Apostle.
         ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).transferFrom(tokenOwner, msg.sender, _tokenId);
-
-        _updateHabergPotionState(_tokenId);
-
-        ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN)).transferFrom(
-            address(this), tokenOwner, tokenId2PotionState[_tokenId].availablePotionFund);
-
-        buyPotion(_tokenId, _depositPotionFee);
     }
 
-    function harbergLiftTime(uint256 _tokenId) public view returns (uint256) {
-        return tokenId2PotionState[_tokenId].boughtLifeTime + tokenId2PotionState[_tokenId].availablePotionFund
+    function harbergLifeTime(uint256 _tokenId) public view returns (uint256) {
+        return tokenId2PotionState[_tokenId].startTime + tokenId2PotionState[_tokenId].boughtLifeTime + tokenId2PotionState[_tokenId].availablePotionFund
             .mul(1 days).div(
             tokenId2PotionState[_tokenId].estimatePrice.mul(registry.uintOf(UINT_HABERG_POTION_TAX_RATE)).div(100000000)
             );
