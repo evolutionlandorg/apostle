@@ -10,7 +10,7 @@ import "./ApostleSettingIds.sol";
 import "./interfaces/IApostleBase.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 
-contract ClockAuction is PausableDSAuth, ApostleSettingIds {
+contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
     using SafeMath for *;
     event AuctionCreated(
         uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token
