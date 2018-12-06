@@ -18,7 +18,7 @@ import "./interfaces/IHabergPotionShop.sol";
 // this is CONTRACT_APOSTLE_BASE
 contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
-    event Birth(address indexed owner, uint256 apostleId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex);
+    event Birth(address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime);
     event Pregnant(uint256 matronId, uint256 sireId);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
@@ -145,7 +145,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         tokenId2Apostle[tokenId] = apostle;
 
-        emit Birth(_owner, lastApostleObjectId, apostle.matronId, apostle.sireId, _genes, _talents, uint256(coolDownIndex));
+        emit Birth(_owner, tokenId, apostle.matronId, apostle.sireId, _genes, _talents, uint256(coolDownIndex), uint256(_generation), now);
 
         return tokenId;
     }
@@ -511,7 +511,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     /// Anyone can try to kill this Apostle;
-    function KillApostle(uint256 _tokenId) public {
+    function killApostle(uint256 _tokenId) public {
         require(tokenId2Apostle[_tokenId].activeTime > 0);
         require(defaultLifeTime(_tokenId) < now);
 
@@ -555,6 +555,22 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     /// IActivity
     function activityStopped(uint256 _tokenId) auth public {
         // do nothing.
+    }
+
+    function getApostleInfo(uint256 _tokenId) public returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
+        Apostle storage apostle = tokenId2Apostle[_tokenId];
+        return (
+        apostle.genes,
+        apostle.talents,
+        apostle.matronId,
+        apostle.sireId,
+        uint256(apostle.cooldownIndex),
+        uint256(apostle.generation),
+        uint256(apostle.birthTime),
+        uint256(apostle.activeTime),
+        uint256(apostle.deadTime),
+        uint256(apostle.cooldownEndTime)
+    );
     }
 }
 
