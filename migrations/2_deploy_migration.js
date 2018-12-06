@@ -12,7 +12,7 @@ const ApostleBaseAuthority = artifacts.require('ApostleBaseAuthority');
 const ClockAuctionAuthority = artifacts.require('ClockAuctionAuthority');
 
 const conf = {
-    registry_address: '0x7050f7a4fa45b95997cd2158bfbe11137be24151',
+    registry_address: '0xd8b7a3f6076872c2c37fb4d5cbfeb5bf45826ed7',
     objectOwnershipProxy_address: '0xe94b9ebf9609a0d20270e8de317381ff4bcdcd79',
     landBaseProxy_address: '0x72eec3a6a9a8628e0f7a2dbbad5df083bd985c5f',
     landObject_class: 1,
@@ -29,7 +29,7 @@ let gen0ApostleProxy_address;
 let siringClockAuctionProxy_address;
 
 module.exports = async (deployer, network) => {
-    if (network != 'kovan') {
+    if (network == 'kovan') {
         return;
     }
 
