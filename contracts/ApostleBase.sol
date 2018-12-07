@@ -557,7 +557,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         // do nothing.
     }
 
-    function getApostleInfo(uint256 _tokenId) public returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
+    function getApostleInfo(uint256 _tokenId) public view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
         Apostle storage apostle = tokenId2Apostle[_tokenId];
         return (
         apostle.genes,
