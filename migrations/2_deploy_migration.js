@@ -1,7 +1,7 @@
 const Proxy = artifacts.require('OwnedUpgradeabilityProxy');
 const ApostleBase = artifacts.require('ApostleBase');
 const ApostleSettingIds = artifacts.require('ApostleSettingIds');
-const ClockAuction = artifacts.require('ClockAuction');
+const ApostleClockAuction = artifacts.require('ApostleClockAuction');
 const SiringClockAuction = artifacts.require('SiringClockAuction');
 const Gen0Apostle = artifacts.require('Gen0Apostle');
 const SettingsRegistry = artifacts.require('SettingsRegistry');
@@ -46,7 +46,7 @@ module.exports = async (deployer, network) => {
         let clockAuctionProxy = await Proxy.deployed();
         clockAuctionProxy_address = clockAuctionProxy.address;
         console.log('ClockAuctionProxy: ', clockAuctionProxy_address);
-        await deployer.deploy(ClockAuction);
+        await deployer.deploy(ApostleClockAuction);
         await deployer.deploy(Proxy);
     }).then(async () => {
         let gen0ApostleProxy = await Proxy.deployed();
@@ -93,7 +93,7 @@ module.exports = async (deployer, network) => {
 
         // upgrade
         await Proxy.at(apostleBaseProxy_address).upgradeTo(ApostleBase.address);
-        await Proxy.at(clockAuctionProxy_address).upgradeTo(ClockAuction.address);
+        await Proxy.at(clockAuctionProxy_address).upgradeTo(ApostleClockAuction.address);
         await Proxy.at(gen0ApostleProxy_address).upgradeTo(Gen0Apostle.address);
         await Proxy.at(siringClockAuctionProxy_address).upgradeTo(SiringClockAuction.address);
 
@@ -101,7 +101,7 @@ module.exports = async (deployer, network) => {
 
         // initialize
         let apostleBaseProxy = await ApostleBase.at(apostleBaseProxy_address);
-        let clockAuctionProxy = await ClockAuction.at(clockAuctionProxy_address);
+        let clockAuctionProxy = await ApostleClockAuction.at(clockAuctionProxy_address);
         let gen0ApostleProxy = await Gen0Apostle.at(gen0ApostleProxy_address);
         let siringClockAuctionProxy = await SiringClockAuction.at(siringClockAuctionProxy_address);
 

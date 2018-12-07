@@ -13,7 +13,7 @@ import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
     using SafeMath for *;
     event AuctionCreated(
-        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token
+        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token, uint256 startedAt
     );
 
     event AuctionSuccessful(uint256 tokenId, uint256 totalPrice, address winner);
@@ -525,7 +525,7 @@ contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
             lastReferer: address(0)
         });
 
-        emit AuctionCreated(_tokenId, _seller, _startingPriceInToken, _endingPriceInToken, _duration, _token);
+        emit AuctionCreated(_tokenId, _seller, _startingPriceInToken, _endingPriceInToken, _duration, _token, _startAt);
     }
 
     /// @dev Computes the current price of an auction. Factored out

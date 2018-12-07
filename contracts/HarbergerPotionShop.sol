@@ -10,7 +10,7 @@ import "@evolutionland/common/contracts/DSAuth.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IApostleBase.sol";
 
-contract  HabergPotionShop is DSAuth, ApostleSettingIds {
+contract  HarbergerPotionShop is DSAuth, ApostleSettingIds {
     using SafeMath for *;
 
     /*
