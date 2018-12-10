@@ -128,8 +128,8 @@ contract SiringClockAuction is SiringAuctionBase {
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize)
-            sireId := mload(add(ptr, 132))
-            matronId := mload(add(ptr, 164))
+            matronId := mload(add(ptr, 132))
+            sireId := mload(add(ptr, 164))
         }
         // safer for users
         require(msg.sender == tokenIdToAuction[sireId].token);

@@ -19,12 +19,14 @@ import "./interfaces/IHabergPotionShop.sol";
 contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
     event Birth(address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime);
-    event Pregnant(uint256 matronId, uint256 sireId);
+    event Pregnant(uint256 matronId,uint256 matronCoolDownEndTime, uint256 sireId, uint256 sireCoolDownEndTime);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
     ///  function. This is used to notify the auto-birth daemon that this breeding action
     ///  included a pre-payment of the gas required to call the giveBirth() function.
     event AutoBirth(uint256 matronId, uint256 cooldownEndTime);
+
+    event Unbox(uint256 tokenId, uint256 activeTime);
 
     struct Apostle {
         // An apostles genes never change.
@@ -112,7 +114,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     }
 
-    // called by ApostleMinting
+    // called by gen0Apostle
     function createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth {
         _createApostle(_matronId, _sireId, _generation, _genes, _talents, _owner);
     }
@@ -190,7 +192,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         return (matronOwner == sireOwner || sireAllowedToAddress[_sireId] == matronOwner);
     }
 
-    function _triggerCooldown(uint256 _tokenId) internal {
+    function _triggerCooldown(uint256 _tokenId) internal returns (uint256) {
 
         Apostle storage aps = tokenId2Apostle[_tokenId];
         // Compute the end of the cooldown time (based on current cooldownIndex)
@@ -205,6 +207,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         // address(0) meaning use by its owner or whitelisted contract
         ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).addActivity(_tokenId, address(0));
+
+        return uint256(aps.cooldownEndTime);
 
     }
 
@@ -349,8 +353,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         matron.siringWithId = _sireId;
 
         // Trigger the cooldown for both parents.
-        _triggerCooldown(_sireId);
-        _triggerCooldown(_matronId);
+        uint sireCoolDownEndTime = _triggerCooldown(_sireId);
+        uint matronCoolDownEndTime = _triggerCooldown(_matronId);
 
         // Clear siring permission for both parents. This may not be strictly necessary
         // but it's likely to avoid confusion!
@@ -359,7 +363,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
 
         // Emit the pregnancy event.
-        emit Pregnant(_matronId, _sireId);
+        emit Pregnant(_matronId, matronCoolDownEndTime, _sireId, sireCoolDownEndTime);
     }
 
 
@@ -545,7 +549,10 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         // to active the apostle when it do activity the first time
         if (tokenId2Apostle[_tokenId].activeTime == 0) {
             tokenId2Apostle[_tokenId].activeTime = uint48(now);
+
+            emit Unbox(_tokenId, now);
         }
+
     }
 
     function activityRemoved(uint256 _tokenId, address _activity, address _user) auth public {
