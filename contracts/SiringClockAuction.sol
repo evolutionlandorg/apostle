@@ -134,14 +134,13 @@ contract SiringClockAuction is SiringAuctionBase {
         // safer for users
         require(msg.sender == tokenIdToAuction[sireId].token);
         require(tokenIdToAuction[sireId].startedAt > 0);
-        require(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).canBreedWithViaAuction(matronId, sireId));
 
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
 
         // Check that the incoming bid is higher than the current price
         uint priceInToken = getCurrentPriceInToken(sireId);
 
-        require(_valueInToken >= priceInToken + autoBirthFee,
+        require(_valueInToken >= (priceInToken + autoBirthFee),
             "your offer is lower than the current price, try again with a higher one.");
         Auction storage auction = tokenIdToAuction[sireId];
         require(now >= uint256(auction.startedAt), "you cant bid before the auction starts.");
@@ -151,24 +150,26 @@ contract SiringClockAuction is SiringAuctionBase {
         _removeAuction(sireId);
         uint refund = _valueInToken - priceInToken - autoBirthFee;
         if (refund > 0) {
-            ERC20(auction.token).transfer(_from, refund);
+            ERC20(msg.sender).transfer(_from, refund);
         }
 
         if (priceInToken > 0) {
-            _bidWithToken(auction, _from, seller, sireId, matronId, priceInToken);
+            _bidWithToken(msg.sender, _from, seller, sireId, matronId, priceInToken);
         }
     }
 
 
-    function _bidWithToken(Auction storage _auction, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken) internal {
+    function _bidWithToken(address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken) internal {
         //uint256 ownerCutAmount = _computeCut(priceInToken);
-        ERC223(_auction.token).transfer(_seller, (_priceInToken - _computeCut(_priceInToken)), toBytes(_from));
+        ERC223(_auctionToken).transfer(_seller, (_priceInToken - _computeCut(_priceInToken)), toBytes(_from));
 
-        ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), _seller, _sireId);
+        IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).approveSiring(_from, _sireId);
 
         address apostleBase = registry.addressOf(CONTRACT_APOSTLE_BASE);
 
-        require(IApostleBase(apostleBase).breedWithInAuction(_sireId, _matronId));
+        require(IApostleBase(apostleBase).breedWithInAuction(_matronId, _sireId));
+
+        ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), _seller, _sireId);
 
         // Tell the world!
         emit AuctionSuccessful(_sireId, _priceInToken, _from);

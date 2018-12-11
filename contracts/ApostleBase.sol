@@ -19,7 +19,7 @@ import "./interfaces/IHabergPotionShop.sol";
 contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
     event Birth(address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime);
-    event Pregnant(uint256 matronId,uint256 matronCoolDownEndTime, uint256 sireId, uint256 sireCoolDownEndTime);
+    event Pregnant(uint256 matronId,uint256 matronCoolDownEndTime, uint256 matronCoolDownIndex, uint256 sireId, uint256 sireCoolDownEndTime, uint256 sireCoolDownIndex);
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
     ///  function. This is used to notify the auto-birth daemon that this breeding action
@@ -263,15 +263,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         return true;
     }
 
-    function canBreedWithViaAuction(uint256 _matronId, uint256 _sireId)
-    public
-    view
-    returns (bool)
-    {
-        Apostle storage matron = tokenId2Apostle[_matronId];
-        Apostle storage sire = tokenId2Apostle[_sireId];
-        return _isValidMatingPair(matron, _matronId, sire, _sireId);
-    }
 
     function canBreedWith(uint256 _matronId, uint256 _sireId)
     public
@@ -290,6 +281,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     // only can be called by SiringClockAuction
     function breedWithInAuction(uint256 _matronId, uint256 _sireId) public auth returns (bool) {
 
+        require(canBreedWith(_matronId, _sireId));
         _breedWith(_matronId, _sireId);
 
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -363,7 +355,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
 
         // Emit the pregnancy event.
-        emit Pregnant(_matronId, matronCoolDownEndTime, _sireId, sireCoolDownEndTime);
+        emit Pregnant(_matronId, matronCoolDownEndTime, uint256(matron.cooldownIndex), _sireId, sireCoolDownEndTime, uint256(sire.cooldownIndex));
     }
 
 

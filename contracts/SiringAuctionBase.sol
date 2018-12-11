@@ -36,7 +36,7 @@ contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
     mapping (uint256 => Auction) tokenIdToAuction;
 
     event AuctionCreated(
-        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token
+        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token, uint256 startedAt
     );
     event AuctionSuccessful(uint256 tokenId, uint256 totalPrice, address winner);
     event AuctionCancelled(uint256 tokenId);
@@ -100,7 +100,7 @@ contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
             token: _token
             });
 
-        emit AuctionCreated(_tokenId, _seller, _startingPriceInToken, _endingPriceInToken, _duration, _token);
+        emit AuctionCreated(_tokenId, _seller, _startingPriceInToken, _endingPriceInToken, _duration, _token, _startAt);
     }
 
     /// @dev Cancels an auction unconditionally.
