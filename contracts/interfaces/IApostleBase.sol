@@ -11,11 +11,13 @@ contract IApostleBase {
 
     function breedWithInAuction(uint256 _matronId, uint256 _sireId) public returns (bool);
 
-    function canBreedWithViaAuction(uint256 _matronId, uint256 _sireId) public view returns (bool);
+    function canBreedWith(uint256 _matronId, uint256 _sireId) public view returns (bool);
 
     function getCooldownDuration(uint256 _tokenId) public view returns (uint256);
 
     function defaultLifeTime(uint256 _tokenId) public view returns (uint256);
 
     function isDead(uint256 _tokenId) public view returns (bool);
+
+    function approveSiring(address _addr, uint256 _sireId) public;
 }
