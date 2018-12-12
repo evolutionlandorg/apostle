@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/evolutionlandorg/apostle#readme",
   "dependencies": {
-    "@evolutionland/common": "^1.5.4",
+    "@evolutionland/common": "^1.5.5",
     "@evolutionland/upgraeability-using-unstructured-storage": "^0.1.1",
     "openzeppelin-solidity": "^1.12.0"
   }

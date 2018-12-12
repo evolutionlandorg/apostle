@@ -206,7 +206,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         }
 
         // address(0) meaning use by its owner or whitelisted contract
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).addActivity(_tokenId, address(0));
+        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).addActivity(_tokenId, address(0), aps.cooldownEndTime);
 
         return uint256(aps.cooldownEndTime);
 
@@ -395,12 +395,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         uint256 sireId = matron.siringWithId;
         Apostle storage sire = tokenId2Apostle[sireId];
 
-        if(msg.sender == ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(sireId)) {
-            require(_isReadyToBreed(sire));
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
-            return;
-        }
-
         if (_resourceToken != address(0)) {
             // users must approve enough resourceToken to this contract
             // if _resourceToken is registered
@@ -410,9 +404,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
 
         require(_payAndMix(_matronId, sire, _resourceToken, _level));
-
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(_matronId, address(0));
-        ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
 
     }
 
@@ -498,9 +489,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
             Apostle storage sire = tokenId2Apostle[sireId];
 
             require(_payAndMix(matronId, sire, msg.sender, level));
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(matronId, owner);
-            ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).removeActivity(sireId, address(0));
-
 
         }
 
