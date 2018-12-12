@@ -274,14 +274,14 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         Apostle storage matron = tokenId2Apostle[_matronId];
         Apostle storage sire = tokenId2Apostle[_sireId];
         return _isValidMatingPair(matron, _matronId, sire, _sireId) &&
-        _isSiringPermitted(_sireId, _matronId);
+        _isSiringPermitted(_sireId, _matronId) &&
+        IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).isOkWithRaceAndGender(matron.genes, sire.genes);
     }
 
 
     // only can be called by SiringClockAuction
     function breedWithInAuction(uint256 _matronId, uint256 _sireId) public auth returns (bool) {
 
-        require(canBreedWith(_matronId, _sireId));
         _breedWith(_matronId, _sireId);
 
         Apostle storage matron = tokenId2Apostle[_matronId];
@@ -289,52 +289,12 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         return true;
     }
 
-    function isAbleToBreed(uint256 _matronId, uint256 _sireId) public view returns (bool) {
-        return _isAbleToBreed(_matronId, _sireId);
-    }
-
-    function _isAbleToBreed(uint256 _matronId, uint256 _sireId) internal view returns (bool) {
-        // Neither sire nor matron are allowed to be on auction during a normal
-        // breeding operation, but we don't need to check that explicitly.
-        // For matron: The caller of this function can't be the owner of the matron
-        //   because the owner of an apostle on auction is the auction house, and the
-        //   auction house will never call breedWith().
-        // For sire: Similarly, a sire on auction will be owned by the auction house
-        //   and the act of transferring ownership will have cleared any oustanding
-        //   siring approval.
-        // Thus we don't need to spend gas explicitly checking to see if either cat
-        // is on auction.
-
-        // Check that matron and sire are both owned by caller, or that the sire
-        // has given siring permission to caller (i.e. matron's owner).
-        // Will fail for _sireId = 0
-        require(_isSiringPermitted(_sireId, _matronId));
-
-        // Grab a reference to the potential matron
-        Apostle storage matron = tokenId2Apostle[_matronId];
-
-        // Make sure matron isn't pregnant, or in the middle of a siring cooldown
-        require(_isReadyToBreed(matron));
-
-        // Grab a reference to the potential sire
-        Apostle storage sire = tokenId2Apostle[_sireId];
-
-        // Make sure sire isn't pregnant, or in the middle of a siring cooldown
-        require(_isReadyToBreed(sire));
-
-        // Test that these cats are a valid mating pair.
-        require(_isValidMatingPair(
-                matron,
-                _matronId,
-                sire,
-                _sireId
-            ));
-
-        return true;
-    }
 
     function _breedWith(uint256 _matronId, uint256 _sireId) internal {
-        require(_isAbleToBreed(_matronId, _sireId));
+        require(canBreedWith(_matronId, _sireId));
+
+        require(isReadyToBreed(_matronId));
+        require(isReadyToBreed(_sireId));
 
         // Grab a reference to the Apostles from storage.
         Apostle storage sire = tokenId2Apostle[_sireId];
