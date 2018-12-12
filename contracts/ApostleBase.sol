@@ -9,6 +9,7 @@ import "@evolutionland/common/contracts/interfaces/IMinerObject.sol";
 import "@evolutionland/common/contracts/interfaces/IActivityObject.sol";
 import "@evolutionland/common/contracts/interfaces/IActivity.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
+import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
@@ -419,6 +420,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         if (msg.sender == registry.addressOf(CONTRACT_RING_ERC20_TOKEN)) {
             require(_value >= autoBirthFee, 'not enough to breed.');
+            ERC223(msg.sender).transfer(registry.addressOf(CONTRACT_REVENUE_POOL), _value, toBytes(_from));
 
             assembly {
                 let ptr := mload(0x40)
@@ -517,7 +519,12 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         uint256(apostle.activeTime),
         uint256(apostle.deadTime),
         uint256(apostle.cooldownEndTime)
-    );
+        );
+    }
+
+    function toBytes(address x) public pure returns (bytes b) {
+        b = new bytes(32);
+        assembly {mstore(add(b, 32), x)}
     }
 }
 

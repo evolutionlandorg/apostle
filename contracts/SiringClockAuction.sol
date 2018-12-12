@@ -154,14 +154,16 @@ contract SiringClockAuction is SiringAuctionBase {
         }
 
         if (priceInToken > 0) {
-            _bidWithToken(msg.sender, _from, seller, sireId, matronId, priceInToken);
+            _bidWithToken(msg.sender, _from, seller, sireId, matronId, priceInToken, autoBirthFee);
         }
     }
 
 
-    function _bidWithToken(address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken) internal {
+    function _bidWithToken(address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken, uint256 _autoBirthFee) internal {
         //uint256 ownerCutAmount = _computeCut(priceInToken);
-        ERC223(_auctionToken).transfer(_seller, (_priceInToken - _computeCut(_priceInToken)), toBytes(_from));
+        uint cut =  _computeCut(_priceInToken);
+        ERC223(_auctionToken).transfer(_seller, (_priceInToken - cut), toBytes(_from));
+        ERC223(_auctionToken).transfer(registry.addressOf(CONTRACT_REVENUE_POOL), (cut + _autoBirthFee), toBytes(_from));
 
         IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).approveSiring(_from, _sireId);
 
