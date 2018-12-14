@@ -107,6 +107,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         _registerInterface(InterfaceId_IActivity);
         _registerInterface(InterfaceId_IActivityObject);
         _registerInterface(InterfaceId_IMinerObject);
+        updateCoolDown();
+
     }
 
     function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
