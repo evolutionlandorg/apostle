@@ -453,7 +453,7 @@ contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
     returns (bytes4) {
         // owner can put apostle on market
         // after coolDownEndTime
-        if(IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId)) {
+        if(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_tokenId)) {
             return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
         }
     }
