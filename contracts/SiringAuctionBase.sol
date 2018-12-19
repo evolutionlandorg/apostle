@@ -10,10 +10,13 @@ import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 /// @title Auction Core
 /// @dev Contains models, variables, and internal methods for the auction.
 contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
-
     using SafeMath for *;
 
-    ISettingsRegistry public registry;
+    event AuctionCreated(
+        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token, uint256 startedAt
+    );
+    event AuctionSuccessful(uint256 tokenId, uint256 totalPrice, address winner);
+    event AuctionCancelled(uint256 tokenId);
 
     // Represents an auction on an NFT
     struct Auction {
@@ -32,14 +35,10 @@ contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
         address token;
     }
 
-    // Map from token ID to their corresponding auction.
-    mapping (uint256 => Auction) tokenIdToAuction;
+    ISettingsRegistry public registry;
 
-    event AuctionCreated(
-        uint256 tokenId, address seller, uint256 startingPriceInToken, uint256 endingPriceInToken, uint256 duration, address token, uint256 startedAt
-    );
-    event AuctionSuccessful(uint256 tokenId, uint256 totalPrice, address winner);
-    event AuctionCancelled(uint256 tokenId);
+    // Map from token ID to their corresponding auction.
+    mapping (uint256 => Auction) public tokenIdToAuction;
 
     /// @dev DON'T give me your money.
     function() external {}
