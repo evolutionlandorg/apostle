@@ -85,6 +85,11 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         singletonLock = true;
     }
 
+    modifier isHuman() {
+        require(msg.sender == tx.origin, "robot is not permitted");
+        _;
+    }
+
 
     /*** STORAGE ***/
     bool private singletonLock = false;
@@ -355,6 +360,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     ///  are willing to pay the gas!), but the new Apostles always goes to the mother's owner.
     function giveBirth(uint256 _matronId, address _resourceToken, uint256 _level)
     public
+    isHuman
     whenNotPaused
     {
 
