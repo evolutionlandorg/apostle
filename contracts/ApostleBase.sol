@@ -107,6 +107,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         _registerInterface(InterfaceId_IActivity);
         _registerInterface(InterfaceId_IActivityObject);
         _registerInterface(InterfaceId_IMinerObject);
+        updateCoolDown();
+
     }
 
     function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
@@ -528,6 +530,25 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     function toBytes(address x) public pure returns (bytes b) {
         b = new bytes(32);
         assembly {mstore(add(b, 32), x)}
+    }
+
+
+    function updateCoolDown() public {
+        cooldowns[0] =  uint32(1 minutes);
+        cooldowns[1] =  uint32(2 minutes);
+        cooldowns[2] =  uint32(5 minutes);
+        cooldowns[3] =  uint32(10 minutes);
+        cooldowns[4] =  uint32(30 minutes);
+        cooldowns[5] =  uint32(1 hours);
+        cooldowns[6] =  uint32(2 hours);
+        cooldowns[7] =  uint32(4 hours);
+        cooldowns[8] =  uint32(8 hours);
+        cooldowns[9] =  uint32(16 hours);
+        cooldowns[10] =  uint32(1 days);
+        cooldowns[11] =  uint32(2 days);
+        cooldowns[12] =  uint32(4 days);
+        cooldowns[13] =  uint32(7 days);
+
     }
 }
 

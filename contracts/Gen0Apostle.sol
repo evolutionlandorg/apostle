@@ -45,11 +45,11 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
     }
 
 
-    function createGen0Apostle(uint256 _genes, uint256 _talents) public {
+    function createGen0Apostle(uint256 _genes, uint256 _talents, address _owner) public {
         require(operator == msg.sender, "you have no rights");
         require(gen0Count + 1 <= gen0CreationLimit, 'enough');
         IApostleBase apostleBase = IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE));
-        apostleBase.createApostle(0, 0, 0, _genes, _talents, address(this));
+        apostleBase.createApostle(0, 0, 0, _genes, _talents, _owner);
         gen0Count++;
     }
 
