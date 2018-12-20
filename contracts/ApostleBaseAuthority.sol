@@ -1,14 +1,13 @@
 pragma solidity ^0.4.24;
 
 contract ApostleBaseAuthority {
+    mapping (address => bool) public whiteList;
 
     constructor(address[] _whitelists) public {
         for (uint i = 0; i < _whitelists.length; i ++) {
             whiteList[_whitelists[i]] = true;
         }
     }
-
-    mapping (address => bool) public whiteList;
 
     function canCall(
         address _src, address _dst, bytes4 _sig

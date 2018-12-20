@@ -91,7 +91,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     uint128 public lastApostleObjectId;
 
-    ISettingsRegistry registry;
+    ISettingsRegistry public registry;
 
     mapping(uint256 => Apostle) public tokenId2Apostle;
 
@@ -118,11 +118,13 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     // called by gen0Apostle
-    function createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth {
+    function createApostle(
+        uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth returns (uint256) {
         _createApostle(_matronId, _sireId, _generation, _genes, _talents, _owner);
     }
 
-    function _createApostle(uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint256) {
+    function _createApostle(
+        uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) internal returns (uint256) {
 
         require(_generation <= 65535);
         uint256 coolDownIndex = _generation / 2;
@@ -318,7 +320,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
 
         // Emit the pregnancy event.
-        emit Pregnant(_matronId, matronCoolDownEndTime, uint256(matron.cooldownIndex), _sireId, sireCoolDownEndTime, uint256(sire.cooldownIndex));
+        emit Pregnant(
+            _matronId, matronCoolDownEndTime, uint256(matron.cooldownIndex), _sireId, sireCoolDownEndTime, uint256(sire.cooldownIndex));
     }
 
 
