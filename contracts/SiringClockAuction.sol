@@ -161,7 +161,7 @@ contract SiringClockAuction is SiringAuctionBase {
 
     function _bidWithToken(address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken, uint256 _autoBirthFee) internal {
         //uint256 ownerCutAmount = _computeCut(priceInToken);
-        uint cut =  _computeCut(_priceInToken);
+        uint cut = _computeCut(_priceInToken);
         ERC223(_auctionToken).transfer(_seller, (_priceInToken - cut), toBytes(_from));
         ERC223(_auctionToken).transfer(registry.addressOf(CONTRACT_REVENUE_POOL), (cut + _autoBirthFee), toBytes(_from));
 
@@ -195,9 +195,7 @@ contract SiringClockAuction is SiringAuctionBase {
 
         // owner can put apostle onto siring market
         // after coolDownEndTime
-        if (ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_tokenId)) {
-            return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
-        }
+        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
 
     }
 
