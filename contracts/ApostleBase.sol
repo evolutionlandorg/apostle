@@ -120,12 +120,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     }
 
-    function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
-        uint256 cooldownIndex = tokenId2Apostle[_tokenId].cooldownIndex;
-        return cooldowns[cooldownIndex];
-
-    }
-
     // called by gen0Apostle
     function createApostle(
         uint256 _matronId, uint256 _sireId, uint256 _generation, uint256 _genes, uint256 _talents, address _owner) public auth returns (uint256) {
@@ -166,12 +160,9 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         return tokenId;
     }
 
-
-    function _isReadyToBreed(Apostle storage _aps) internal view returns (bool) {
-        // In addition to checking the cooldownEndTime, we also need to check to see if
-        // the cat has a pending birth; there can be some period of time between the end
-        // of the pregnacy timer and the birth event.
-        return (_aps.siringWithId == 0) && (_aps.cooldownEndTime <= now);
+    function getCooldownDuration(uint256 _tokenId) public view returns (uint256){
+        uint256 cooldownIndex = tokenId2Apostle[_tokenId].cooldownIndex;
+        return cooldowns[cooldownIndex];
     }
 
     // @dev Checks to see if a apostle is able to breed.
@@ -181,10 +172,14 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     view
     returns (bool)
     {
-        require(_apostleId > 0);
-        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apostleId));
-        Apostle storage aps = tokenId2Apostle[_apostleId];
-        return _isReadyToBreed(aps);
+        require(tokenId2Apostle[_apostleId].birthTime > 0, "Apostle should exist");
+
+        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apostleId), "Object ready to do activity");
+
+        // In addition to checking the cooldownEndTime, we also need to check to see if
+        // the cat has a pending birth; there can be some period of time between the end
+        // of the pregnacy timer and the birth event.
+        return (tokenId2Apostle[_apostleId].siringWithId == 0) && (tokenId2Apostle[_apostleId].cooldownEndTime <= now);
     }
 
     function approveSiring(address _addr, uint256 _sireId)
@@ -193,6 +188,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     {
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
         require(objectOwnership.ownerOf(_sireId) == msg.sender);
+
         sireAllowedToAddress[_sireId] = _addr;
     }
 
@@ -466,6 +462,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
             sireId = matron.siringWithId;
             Apostle storage sire = tokenId2Apostle[sireId];
 
+            // TODO: msg.sender must be valid resource tokens, this is now checked in the implement of IGeneScience.
+            // better to check add a API in IGeneScience for checking valid msg.sender is one of the resource.
             require(_payAndMix(matronId, sire, msg.sender, level));
 
         }
@@ -498,8 +496,8 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     /// IMinerObject
     function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
         uint talents = tokenId2Apostle[_tokenId].talents;
-        uint strength = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).getStrength(talents, _resourceToken);
-        return strength;
+        return IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE))
+            .getStrength(talents, _resourceToken);
     }
 
     /// IActivityObject
