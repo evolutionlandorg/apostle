@@ -19,8 +19,12 @@ import "./interfaces/IHabergPotionShop.sol";
 // this is CONTRACT_APOSTLE_BASE
 contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
-    event Birth(address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime);
-    event Pregnant(uint256 matronId,uint256 matronCoolDownEndTime, uint256 matronCoolDownIndex, uint256 sireId, uint256 sireCoolDownEndTime, uint256 sireCoolDownIndex);
+    event Birth(
+        address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime
+    );
+    event Pregnant(
+        uint256 matronId,uint256 matronCoolDownEndTime, uint256 matronCoolDownIndex, uint256 sireId, uint256 sireCoolDownEndTime, uint256 sireCoolDownIndex
+    );
 
     /// @dev The AutoBirth event is fired when a cat becomes pregant via the breedWithAuto()
     ///  function. This is used to notify the auto-birth daemon that this breeding action
@@ -112,7 +116,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         _registerInterface(InterfaceId_IActivity);
         _registerInterface(InterfaceId_IActivityObject);
         _registerInterface(InterfaceId_IMinerObject);
-        updateCoolDown();
+        _updateCoolDown();
 
     }
 
@@ -540,7 +544,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
 
-    function updateCoolDown() public {
+    function _updateCoolDown() internal {
         cooldowns[0] =  uint32(1 minutes);
         cooldowns[1] =  uint32(2 minutes);
         cooldowns[2] =  uint32(5 minutes);
@@ -555,7 +559,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         cooldowns[11] =  uint32(2 days);
         cooldowns[12] =  uint32(4 days);
         cooldowns[13] =  uint32(7 days);
-
     }
 }
 
