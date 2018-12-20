@@ -173,6 +173,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     returns (bool)
     {
         require(_apostleId > 0);
+        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apostleId));
         Apostle storage aps = tokenId2Apostle[_apostleId];
         return _isReadyToBreed(aps);
     }

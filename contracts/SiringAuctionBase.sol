@@ -6,6 +6,7 @@ import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "./ApostleSettingIds.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
+import "./interfaces/IApostleBase.sol";
 
 /// @title Auction Core
 /// @dev Contains models, variables, and internal methods for the auction.
@@ -85,8 +86,8 @@ contract SiringAuctionBase is ApostleSettingIds, PausableDSAuth {
         // at least one minute. (Keeps our math from getting hairy!)
         require(_duration >= 1 minutes, "duration must be at least 1 minutes");
         require(_duration <= 1000 days);
-        require(ITokenUse(registry.addressOf(SettingIds.CONTRACT_TOKEN_USE)).isObjectReadyToUse(_tokenId), "it is still in use.");
 
+        require(IApostleBase(registry.addressOf(ApostleSettingIds.CONTRACT_APOSTLE_BASE)).isReadyToBreed(_tokenId), "it is still in use or have a baby to give birth.");
         // escrow
         ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).safeTransferFrom(_from, address(this), _tokenId);
 
