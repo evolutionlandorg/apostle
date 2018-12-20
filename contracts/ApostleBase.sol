@@ -366,7 +366,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         Apostle storage matron = tokenId2Apostle[_matronId];
         uint256 sireId = matron.siringWithId;
-        Apostle storage sire = tokenId2Apostle[sireId];
 
         if (_resourceToken != address(0)) {
             // users must approve enough resourceToken to this contract
@@ -376,23 +375,24 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         }
 
 
-        require(_payAndMix(_matronId, sire, _resourceToken, _level));
+        require(_payAndMix(_matronId, sireId, _resourceToken, _level));
 
     }
 
 
     function _payAndMix(
         uint256 _matronId,
-        Apostle storage _sire,
+        uint256 _sireId,
         address _resourceToken,
         uint256 _level)
     internal returns (bool) {
-
         // Grab a reference to the matron in storage.
         Apostle storage matron = tokenId2Apostle[_matronId];
+        Apostle storage sire = tokenId2Apostle[_sireId];
 
-        // Check that the matron is a valid cat.
-        require(matron.birthTime != 0);
+        // Check that the matron is a valid apostle.
+        require(matron.birthTime > 0);
+        require(sire.birthTime > 0);
 
         // Check that the matron is pregnant, and that its time has come!
         require(_isReadyToGiveBirth(matron));
@@ -404,12 +404,12 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
         // Determine the higher generation number of the two parents
         uint16 parentGen = matron.generation;
-        if (_sire.generation > matron.generation) {
-            parentGen = _sire.generation;
+        if (sire.generation > matron.generation) {
+            parentGen = sire.generation;
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (uint256 childGenes, uint256 childTalents) = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, _sire.genes, matron.talents, _sire.talents, _resourceToken, _level);
+        (uint256 childGenes, uint256 childTalents) = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
 
         address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
@@ -428,7 +428,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         uint matronId;
         uint sireId;
         uint level;
-        Apostle storage matron;
 
         if (msg.sender == registry.addressOf(CONTRACT_RING_ERC20_TOKEN)) {
             require(_value >= autoBirthFee, 'not enough to breed.');
@@ -443,9 +442,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
             // All checks passed, apostle gets pregnant!
             _breedWith(matronId, sireId);
-
-            matron = tokenId2Apostle[matronId];
-            emit AutoBirth(matronId, uint48(matron.cooldownEndTime));
+            emit AutoBirth(matronId, uint48(tokenId2Apostle[matronId].cooldownEndTime));
 
         } else {
 
@@ -458,13 +455,11 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
             require(level > 0 && _value >= level * registry.uintOf(UINT_MIX_TALENT), 'resource for mixing is not enough.');
 
-            matron = tokenId2Apostle[matronId];
-            sireId = matron.siringWithId;
-            Apostle storage sire = tokenId2Apostle[sireId];
+            sireId = tokenId2Apostle[matronId].siringWithId;
 
             // TODO: msg.sender must be valid resource tokens, this is now checked in the implement of IGeneScience.
             // better to check add a API in IGeneScience for checking valid msg.sender is one of the resource.
-            require(_payAndMix(matronId, sire, msg.sender, level));
+            require(_payAndMix(matronId, sireId, msg.sender, level));
 
         }
 
