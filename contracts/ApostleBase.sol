@@ -349,7 +349,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         Apostle storage matron = tokenId2Apostle[_matronId];
         emit AutoBirth(_matronId, uint48(matron.cooldownEndTime));
     }
-
     /// @notice Have a pregnant apostle give birth!
     /// @param _matronId An apostle ready to give birth.
     /// @return The apostle tokenId of the new Apostles.
