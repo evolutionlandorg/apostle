@@ -488,10 +488,10 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     /// IMinerObject
-    function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
+    function strengthOf(uint256 _tokenId, address _resourceToken, uint256 _landTokenId) public view returns (uint256) {
         uint talents = tokenId2Apostle[_tokenId].talents;
         return IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE))
-            .getStrength(talents, _resourceToken);
+            .getStrength(talents, _resourceToken, _landTokenId);
     }
 
     /// IActivityObject
