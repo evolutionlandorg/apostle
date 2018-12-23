@@ -14,6 +14,7 @@ import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLooku
 import "./ApostleSettingIds.sol";
 import "./interfaces/IGeneScience.sol";
 import "./interfaces/IHabergPotionShop.sol";
+import "./interfaces/ILandBase.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -349,7 +350,6 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         Apostle storage matron = tokenId2Apostle[_matronId];
         emit AutoBirth(_matronId, uint48(matron.cooldownEndTime));
     }
-
     /// @notice Have a pregnant apostle give birth!
     /// @param _matronId An apostle ready to give birth.
     /// @return The apostle tokenId of the new Apostles.
@@ -444,7 +444,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
             _breedWith(matronId, sireId);
             emit AutoBirth(matronId, uint48(tokenId2Apostle[matronId].cooldownEndTime));
 
-        } else {
+        } else if (isValidResourceToken(msg.sender)){
 
             assembly {
                 let ptr := mload(0x40)
@@ -464,6 +464,12 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         }
 
     }
+
+    function isValidResourceToken(address _resourceToken) public view returns (bool) {
+        uint index = ILandBase(registry.addressOf(SettingIds.CONTRACT_LAND_BASE)).resourceToken2RateAttrId(_resourceToken);
+        return index > 0;
+    }
+
 
     /// Anyone can try to kill this Apostle;
     function killApostle(uint256 _tokenId) public {
@@ -489,10 +495,10 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     /// IMinerObject
-    function strengthOf(uint256 _tokenId, address _resourceToken) public view returns (uint256) {
+    function strengthOf(uint256 _tokenId, address _resourceToken, uint256 _landTokenId) public view returns (uint256) {
         uint talents = tokenId2Apostle[_tokenId].talents;
         return IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE))
-            .getStrength(talents, _resourceToken);
+            .getStrength(talents, _resourceToken, _landTokenId);
     }
 
     /// IActivityObject
