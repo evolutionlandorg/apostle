@@ -18,7 +18,7 @@ import "./interfaces/ILandBase.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
-contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
+contract ApostleBaseV2 is SupportsInterfaceWithLookup, IActivity, IActivityObject, IMinerObject, PausableDSAuth, ApostleSettingIds {
 
     event Birth(
         address indexed owner, uint256 apostleTokenId, uint256 matronId, uint256 sireId, uint256 genes, uint256 talents, uint256 coolDownIndex, uint256 generation, uint256 birthTime
@@ -560,13 +560,13 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         cooldowns[13] =  uint32(7 days);
     }
 
-    function updateGenesAndTalents(uint256 _tokenId, uint256 _genes, uint256 _talents) public onlyOwner {
+    function updateGenesAndTalents(uint256 _tokenId, uint256 _genes, uint256 _talents) public auth {
         Apostle storage aps = tokenId2Apostle[_tokenId];
         aps.genes = _genes;
         aps.talents = _talents;
     }
 
-    function batchUpdate(uint256[] _tokenIds, uint256[] _genesList, uint256[] _talentsList) public onlyOwner {
+    function batchUpdate(uint256[] _tokenIds, uint256[] _genesList, uint256[] _talentsList) public auth {
         require(_tokenIds.length == _genesList.length && _tokenIds.length == _talentsList.length);
         for(uint i = 0; i < _tokenIds.length; i++) {
             Apostle storage aps = tokenId2Apostle[_tokenIds[i]];
