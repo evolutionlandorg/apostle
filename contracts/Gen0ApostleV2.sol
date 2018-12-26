@@ -8,7 +8,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 
-contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
+contract Gen0ApostleV2 is PausableDSAuth, ApostleSettingIds {
     // claimedToken event
     event ClaimedTokens(address indexed token, address indexed owner, uint amount);
     event ClaimedERC721Token(address indexed owner, uint256 tokenId);
