@@ -122,10 +122,9 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
         emit ClaimedERC721Token(owner, _tokenId);
     }
 
-    function transferToTakeBack(uint256 _tokenId, address _newOwner) public auth {
+    function setApproval(address _operator, bool _isApproved) public onlyOwner {
         ERC721 nft = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
-        require(nft.ownerOf(_tokenId) == address(this), "you cant touch players' apostles.");
-        nft.transferFrom(address(this), _newOwner, _tokenId);
+        nft.setApprovalForAll(_operator, _isApproved);
     }
 
 }
