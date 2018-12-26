@@ -12,7 +12,7 @@ contract Gen0ApostleAuthorityV2 {
     function canCall(
         address _src, address _dst, bytes4 _sig
     ) public view returns (bool) {
-        return ( whiteList[_src] && _sig == bytes4(keccak256("transferToTakeBack(uint256)")) );
+        return ( whiteList[_src] && _sig == bytes4(keccak256("transferToTakeBack(uint256,address)")) );
 
     }
 }
