@@ -2,8 +2,9 @@ pragma solidity ^0.4.23;
 import "@evolutionland/common/contracts/ObjectOwnershipAuthority.sol";
 import '@evolutionland/common/contracts/SettingsRegistry.sol';
 import "@evolutionland/common/contracts/ObjectOwnership.sol";
-import "@evolutionland/common/contracts/InterstellarEncoderV2.sol";
+import "@evolutionland/common/contracts/InterstellarEncoderV3.sol";
 import "@evolutionland/upgraeability-using-unstructured-storage/contracts/OwnedUpgradeabilityProxy.sol";
+import "@evolutionland/common/contracts/ERC721Bridge.sol";
 
 contract Migrations {
   address public owner;
