@@ -27,4 +27,7 @@ contract ApostleSettingIds is SettingIds {
 
     /// Denominator is 100000000
     bytes32 public constant UINT_HABERG_POTION_TAX_RATE = "UINT_HABERG_POTION_TAX_RATE";
+
+    // TODO: move this to common-contract
+    bytes32 constant CONTRACT_LAND_RESOURCE = "CONTRACT_LAND_RESOURCE";
 }
