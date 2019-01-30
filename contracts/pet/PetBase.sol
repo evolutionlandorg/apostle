@@ -72,14 +72,11 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
         return tokenId;
     }
 
-     function bridgeInAndTie(address _originNftAddress, uint256 _originTokenId, uint256 _apostleTokenId) public {
-         address erc721Bridge = registry.addressOf(SettingIds.CONTRACT_ERC721_BRIDGE);
-         uint256 mirrorTokenId = IERC721Bridge(erc721Bridge).bridgeInAuth(_originNftAddress, _originTokenId, msg.sender);
-         _tiePetTokenToApostle(mirrorTokenId, _apostleTokenId, msg.sender, _originNftAddress);
-     }
-
-
-
+    function bridgeInAndTie(address _originNftAddress, uint256 _originTokenId, uint256 _apostleTokenId) public {
+        address erc721Bridge = registry.addressOf(SettingIds.CONTRACT_ERC721_BRIDGE);
+        uint256 mirrorTokenId = IERC721Bridge(erc721Bridge).bridgeInAuth(_originNftAddress, _originTokenId, msg.sender);
+        _tiePetTokenToApostle(mirrorTokenId, _apostleTokenId, msg.sender, _originNftAddress);
+    }
 
     // any one can use it
     function tiePetTokenToApostle(uint256 _mirrorTokenId, uint256 _apostleTokenId) public {
