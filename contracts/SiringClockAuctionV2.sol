@@ -8,7 +8,7 @@ import "./interfaces/IApostleBase.sol";
 import "./SiringAuctionBase.sol";
 
 /// @title Clock auction for non-fungible tokens.
-contract SiringClockAuction is SiringAuctionBase {
+contract SiringClockAuctionV2 is SiringAuctionBase {
 
 
     bool private singletonLock = false;
