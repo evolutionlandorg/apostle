@@ -42,8 +42,8 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
     mapping(uint256 => PetStatus) public tokenId2PetStatus;
     mapping(uint256 => TiedStatus) public pet2TiedStatus;
 
-    event Tied(uint256 apostleTokenId, uint256 mirrorTokenId, uint256 enhancedTalents, bool changed, address originNFT);
-    event UnTied(uint256 apostleTokenId, uint256 mirrorTokenId, uint256 enhancedTalents, bool changed, address originNFT);
+    event Tied(uint256 apostleTokenId, uint256 mirrorTokenId, uint256 enhancedTalents, bool changed, address originNFT, address owner);
+    event UnTied(uint256 apostleTokenId, uint256 mirrorTokenId, uint256 enhancedTalents, bool changed, address originNFT, address owner);
 
     /*
         *  Modifiers
@@ -114,7 +114,7 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
 
         bool changed = _updateTalentsAndMinerStrength(_petTokenId, _apostleTokenId, genes, talents, enhancedTalents, _owner);
 
-        emit Tied(_apostleTokenId, _petTokenId, enhancedTalents, changed, _originAddress);
+        emit Tied(_apostleTokenId, _petTokenId, enhancedTalents, changed, _originAddress, _owner);
     }
 
 
@@ -129,12 +129,11 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
             require(IERC721Bridge(erc721Bridge).isBridged(_petTokenId), "please bridged in first.");
         }
 
+        address objectOwnership = registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP);
+
         // if this pet is inside evoland
         // it will also be considered in erc721Bridge
-        require(IERC721Bridge(erc721Bridge).ownerOf(_petTokenId) == _owner, "you have no right.");
-        // msg.sender must own this apostle
-        address objectOwnership = registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP);
-        require(ERC721(objectOwnership).ownerOf(_apostleTokenId) == _owner, "you have no right to touch this apostle.");
+        require(IERC721Bridge(erc721Bridge).ownerOf(_petTokenId) == _owner || ERC721(objectOwnership).ownerOf(_apostleTokenId) == _owner, "you have no right.");
 
 
         // TODO: update mine
@@ -144,13 +143,13 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
             address landResource = registry.addressOf(CONTRACT_LAND_RESOURCE);
             if (ILandResource(landResource).landWorkingOn(_apostleTokenId) != 0) {
                 // true means minus strength
-                ILandResource(landResource).updateMinerStrength(_apostleTokenId, _owner, true);
+                ILandResource(landResource).updateMinerStrengthWhenStop(_apostleTokenId);
             }
 
             IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).updateGenesAndTalents(_apostleTokenId, _genes, _modifiedTalents);
 
             if (ILandResource(landResource).landWorkingOn(_apostleTokenId) != 0) {
-                ILandResource(landResource).updateMinerStrength(_apostleTokenId, _owner, false);
+                ILandResource(landResource).updateMinerStrengthWhenStart(_apostleTokenId);
             }
         }
 
@@ -159,7 +158,11 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
 
     function untiePetToken(uint256 _petTokenId) public {
         uint256 apostleTokenId = pet2TiedStatus[_petTokenId].apostleTokenId;
-        require(apostleTokenId != 0, "no need to untie.");
+
+        // if pet is not tied, do nothing
+        if(apostleTokenId == 0) {
+            return;
+        }
 
         uint256 index = pet2TiedStatus[_petTokenId].index;
         // update count
@@ -192,8 +195,12 @@ contract PetBase is PausableDSAuth, ApostleSettingIds {
         IInterstellarEncoderV3 interstellarEncoder = IInterstellarEncoderV3(registry.addressOf(SettingIds.CONTRACT_INTERSTELLAR_ENCODER));
         address originAddress = interstellarEncoder.getOriginAddress(_petTokenId);
 
-        emit UnTied(apostleTokenId, _petTokenId, weakenTalents, changed, originAddress);
+        emit UnTied(apostleTokenId, _petTokenId, weakenTalents, changed, originAddress, msg.sender);
 
+    }
+
+    function getTiedPet(uint256 _apostleTokenId, uint256 _index) public view returns (uint256) {
+        return tokenId2PetStatus[_apostleTokenId].tiedList[_index];
     }
 
 }
