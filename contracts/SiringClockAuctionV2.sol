@@ -161,7 +161,11 @@ contract SiringClockAuctionV2 is SiringAuctionBase {
 
 
     function _bidWithToken(
-        address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken, uint256 _autoBirthFee) internal {
+        address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken, uint256 _autoBirthFee)
+    internal
+    {
+        ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
+        require(objectOwnership.ownerOf(_matronId) == _from, "You can only breed your own apostle.");
         //uint256 ownerCutAmount = _computeCut(priceInToken);
         uint cut = _computeCut(_priceInToken);
         ERC223(_auctionToken).transfer(_seller, (_priceInToken - cut), toBytes(_from));
@@ -173,7 +177,7 @@ contract SiringClockAuctionV2 is SiringAuctionBase {
 
         require(IApostleBase(apostleBase).breedWithInAuction(_matronId, _sireId));
 
-        ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).transferFrom(address(this), _seller, _sireId);
+        objectOwnership.transferFrom(address(this), _seller, _sireId);
 
         // Tell the world!
         emit AuctionSuccessful(_sireId, _priceInToken, _from);
