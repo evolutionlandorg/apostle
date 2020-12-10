@@ -1,8 +1,10 @@
 .idea
 node_modules
 build
-contracts-flattener
 truffle.js
 truffle-config.js
 package-lock.json
+contracts/GeneScienceV8.sol
+waffle.json
+cache
 
