@@ -8,3 +8,4 @@ contracts/GeneScienceV8.sol
 waffle.json
 cache
 out
+flat

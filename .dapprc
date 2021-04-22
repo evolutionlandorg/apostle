@@ -1,6 +1,0 @@
-export DAPP_SRC=contracts
-export DAPP_LIB=lib
-export DAPP_REMAPPINGS="openzeppelin-solidity/=lib/zeppelin-solidity/
-@evolutionland/common/=lib/common-contracts/"
-export DAPP_BUILD_LEGACY=yes
-export DAPP_VERBOSE=yes
