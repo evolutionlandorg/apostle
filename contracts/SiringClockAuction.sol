@@ -122,7 +122,7 @@ contract SiringClockAuction is SiringAuctionBase {
     }
 
 
-    function tokenFallback(address _from, uint256 _valueInToken, bytes _data) public whenNotPaused {
+    function tokenFallback(address _from, uint256 _valueInToken, bytes /*_data*/) public whenNotPaused {
         uint sireId;
         uint matronId;
         assembly {
@@ -193,6 +193,7 @@ contract SiringClockAuction is SiringAuctionBase {
         bytes //_data
     )
     public
+    pure
     returns (bytes4) {
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
 

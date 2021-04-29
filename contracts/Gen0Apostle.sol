@@ -77,7 +77,7 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
         operator = _operator;
     }
 
-    function tokenFallback(address _from, uint256 _value, bytes _data) public {
+    function tokenFallback(address /*_from*/, uint256 _value, bytes _data) public {
         address ring = registry.addressOf(CONTRACT_RING_ERC20_TOKEN);
         address kton = registry.addressOf(CONTRACT_KTON_ERC20_TOKEN);
         address revenuePool = registry.addressOf(CONTRACT_REVENUE_POOL);
@@ -95,6 +95,7 @@ contract Gen0Apostle is PausableDSAuth, ApostleSettingIds {
         bytes //_data
     )
     public
+    pure
     returns (bytes4) {
         return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
     }

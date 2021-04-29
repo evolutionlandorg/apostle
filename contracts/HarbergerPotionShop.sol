@@ -93,7 +93,7 @@ contract  HarbergerPotionShop is DSAuth, ApostleSettingIds {
         });
     }
 
-    function tryKillApostle(uint256 _tokenId, address _killer) public auth {
+    function tryKillApostle(uint256 _tokenId, address /*_killer*/) public auth {
         if (tokenId2PotionState[_tokenId].lastUpdateTime == 0) {
             // didn't start hargberg or already exited.
             return;

@@ -10,7 +10,7 @@ contract ApostleBaseAuthorityV2 {
     }
 
     function canCall(
-        address _src, address _dst, bytes4 _sig
+        address _src, address /*_dst*/, bytes4 _sig
     ) public view returns (bool) {
         return ( whiteList[_src] && _sig == bytes4(keccak256("createApostle(uint256,uint256,uint256,uint256,uint256,address)")) ) ||
                ( whiteList[_src] && _sig == bytes4(keccak256("breedWithInAuction(uint256,uint256)")) ) ||
