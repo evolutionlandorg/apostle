@@ -10,7 +10,8 @@ contract Authority {
     address public root;
     mapping (address => uint) public wards;
     mapping (bytes4 => uint)  public sigs;
-    modifier sudo                               { require(msg.sender == root); _; }
+
+    modifier sudo { require(msg.sender == root); _; }
     function setRoot(address usr) public sudo { root = usr; emit SetRoot(usr); }
     function rely(address usr)    public sudo { wards[usr] = 1; emit Rely(usr); }
     function deny(address usr)    public sudo { wards[usr] = 0; emit Deny(usr); }
