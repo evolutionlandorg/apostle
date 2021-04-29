@@ -16,7 +16,7 @@ contract Authority {
     function rely(address usr)    public sudo { wards[usr] = 1; emit Rely(usr); }
     function deny(address usr)    public sudo { wards[usr] = 0; emit Deny(usr); }
     function allow(bytes4 sig)    public sudo { sigs[sig] = 1; emit Allow(sig); }
-    function forbid(bytes4 sig)   public sudo { sigs[sig] = 1; emit Forbid(sig); }
+    function forbid(bytes4 sig)   public sudo { sigs[sig] = 0; emit Forbid(sig); }
 
     constructor(address[] _wards, bytes4[] _sigs) public {
         root = msg.sender;
