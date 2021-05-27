@@ -30,4 +30,7 @@ contract ApostleSettingIds is SettingIds {
 
     // TODO: move this to common-contract
     bytes32 public constant CONTRACT_LAND_RESOURCE = "CONTRACT_LAND_RESOURCE";
+
+
+    bytes32 public constant CONTRACT_GEN0_APOSTLE = "CONTRACT_GEN0_APOSTLE";
 }

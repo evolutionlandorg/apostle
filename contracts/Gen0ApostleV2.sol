@@ -5,7 +5,6 @@ import "./interfaces/IApostleBase.sol";
 import "./interfaces/IApostleAuction.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 
 contract Gen0ApostleV2 is PausableDSAuth, ApostleSettingIds {
@@ -39,7 +38,6 @@ contract Gen0ApostleV2 is PausableDSAuth, ApostleSettingIds {
         registry = _registry;
         gen0CreationLimit = _gen0Limit;
     }
-
 
     function createGen0Apostle(uint256 _genes, uint256 _talents, address _owner) public {
         require(operator == msg.sender, "you have no rights");
@@ -76,16 +74,6 @@ contract Gen0ApostleV2 is PausableDSAuth, ApostleSettingIds {
 
     function setOperator(address _operator) public onlyOwner {
         operator = _operator;
-    }
-
-    function tokenFallback(address /*_from*/, uint256 _value, bytes _data) public {
-        address ring = registry.addressOf(CONTRACT_RING_ERC20_TOKEN);
-        address kton = registry.addressOf(CONTRACT_KTON_ERC20_TOKEN);
-        address revenuePool = registry.addressOf(CONTRACT_REVENUE_POOL);
-
-        if(msg.sender == ring || msg.sender == kton) {
-            ERC223(msg.sender).transfer(revenuePool, _value, _data);
-        }
     }
 
     // to apply for the safeTransferFrom
