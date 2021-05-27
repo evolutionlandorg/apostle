@@ -2,13 +2,13 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
-import "@evolutionland/common/contracts/interfaces/ERC223.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 import "./interfaces/IApostleBase.sol";
+import "./interfaces/IRevenuePool.sol";
 import "./SiringAuctionBase.sol";
 
 /// @title Clock auction for non-fungible tokens.
-contract SiringClockAuctionV2 is SiringAuctionBase {
+contract SiringClockAuctionV3 is SiringAuctionBase {
 
 
     bool private singletonLock = false;
@@ -122,40 +122,20 @@ contract SiringClockAuctionV2 is SiringAuctionBase {
     }
 
 
-    function tokenFallback(address _from, uint256 _valueInToken, bytes /*_data*/) public whenNotPaused {
-        uint sireId;
-        uint matronId;
-        assembly {
-            let ptr := mload(0x40)
-            calldatacopy(ptr, 0, calldatasize)
-            matronId := mload(add(ptr, 132))
-            sireId := mload(add(ptr, 164))
-        }
+    function bidWithToken(uint256 matronId, uint256 sireId) public whenNotPaused {
         // safer for users
-        require(msg.sender == tokenIdToAuction[sireId].token);
-        require(tokenIdToAuction[sireId].startedAt > 0);
-
+        Auction storage auction = tokenIdToAuction[sireId];
+        require(auction.startedAt > 0, "no start");
+        require(now >= uint256(auction.startedAt), "you cant bid before the auction starts.");
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
-
         // Check that the incoming bid is higher than the current price
         uint priceInToken = getCurrentPriceInToken(sireId);
-
-        require(_valueInToken >= (priceInToken + autoBirthFee),
-            "your offer is lower than the current price, try again with a higher one.");
-        Auction storage auction = tokenIdToAuction[sireId];
-        require(now >= uint256(auction.startedAt), "you cant bid before the auction starts.");
-
-        address seller = auction.seller;
+        require(ERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
 
         _removeAuction(sireId);
-        uint refund = _valueInToken - priceInToken - autoBirthFee;
-        
-        if (refund > 0) {
-            ERC20(msg.sender).transfer(_from, refund);
-        }
 
         if (priceInToken > 0) {
-            _bidWithToken(msg.sender, _from, seller, sireId, matronId, priceInToken, autoBirthFee);
+            _bidWithToken(auction.token, msg.sender, auction.seller, sireId, matronId, priceInToken, autoBirthFee);
         }
     }
 
@@ -168,8 +148,10 @@ contract SiringClockAuctionV2 is SiringAuctionBase {
         require(objectOwnership.ownerOf(_matronId) == _from, "You can only breed your own apostle.");
         //uint256 ownerCutAmount = _computeCut(priceInToken);
         uint cut = _computeCut(_priceInToken);
-        ERC223(_auctionToken).transfer(_seller, (_priceInToken - cut), toBytes(_from));
-        ERC223(_auctionToken).transfer(registry.addressOf(CONTRACT_REVENUE_POOL), (cut + _autoBirthFee), toBytes(_from));
+        ERC20(_auctionToken).transfer(_seller, (_priceInToken - cut));
+        address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
+        ERC20(_auctionToken).approve(pool, (cut + _autoBirthFee));
+        IRevenuePool(pool).reward(_auctionToken, (cut + _autoBirthFee), _from);
 
         IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).approveSiring(_from, _sireId);
 
