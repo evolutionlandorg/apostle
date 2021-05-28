@@ -339,10 +339,9 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // Check for payment
         // caller must approve first.
         uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
+        require(_amountMax >= autoBirthFee, 'not enough to breed.');
         ERC20 ring = ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN));
-
-        require(_amountMax >= autoBirthFee,
-            "your offer is lower than the current price, try again with a higher one.");
+        require(ring.transferFrom(msg.sender, address(this), autoBirthFee), "transfer failed");
 
         address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
         ring.approve(pool, autoBirthFee);
@@ -364,7 +363,7 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     ///  to the current owner of the matron. Upon successful completion, both the matron and the
     ///  new Apostles will be ready to breed again. Note that anyone can call this function (if they
     ///  are willing to pay the gas!), but the new Apostles always goes to the mother's owner.
-    function giveBirth(uint256 _matronId, address _resourceToken, uint256 _level)
+    function giveBirth(uint256 _matronId, address _resourceToken, uint256 _level, uint256 _amountMax)
     public
     isHuman
     whenNotPaused
@@ -377,7 +376,9 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
             // users must approve enough resourceToken to this contract
             // if _resourceToken is registered
             // will be checked in mixgenes
-            ERC20(_resourceToken).transferFrom(msg.sender, address(this), _level * registry.uintOf(UINT_MIX_TALENT));
+            uint256 expense = _level * registry.uintOf(UINT_MIX_TALENT);
+            require(_level > 0 && _amountMax >= expense, 'resource for mixing is not enough.');
+            ERC20(_resourceToken).transferFrom(msg.sender, address(this), expense);
         }
 
 
