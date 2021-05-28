@@ -122,7 +122,7 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
     }
 
 
-    function bidWithToken(uint256 matronId, uint256 sireId) public whenNotPaused {
+    function bidWithToken(uint256 matronId, uint256 sireId, uint256 _amountMax) public whenNotPaused {
         // safer for users
         Auction storage auction = tokenIdToAuction[sireId];
         require(auction.startedAt > 0, "no start");
@@ -130,6 +130,14 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
         uint256 autoBirthFee = registry.uintOf(UINT_AUTOBIRTH_FEE);
         // Check that the incoming bid is higher than the current price
         uint priceInToken = getCurrentPriceInToken(sireId);
+
+        require(_amountMax >= priceInToken,
+            "your offer is lower than the current price, try again with a higher one.");
+        uint refund = _amountMax - priceInToken;
+        if (refund > 0) {
+            ERC20(auction.token).transfer(msg.sender, refund);
+        }
+
         require(ERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
 
         _removeAuction(sireId);

@@ -332,7 +332,7 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     }
 
 
-    function breedWithAuto(uint256 _matronId, uint256 _sireId)
+    function breedWithAuto(uint256 _matronId, uint256 _sireId, uint256 _amountMax)
     public
     whenNotPaused
     {
@@ -340,6 +340,14 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // caller must approve first.
         uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
         ERC20 ring = ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN));
+
+        require(_amountMax >= autoBirthFee,
+            "your offer is lower than the current price, try again with a higher one.");
+        uint refund = _amountMax - autoBirthFee;
+        if (refund > 0) {
+            ERC20(ring).transfer(msg.sender, refund);
+        }
+
         address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
         ring.approve(pool, autoBirthFee);
         IRevenuePool(pool).reward(ring, autoBirthFee, msg.sender);
