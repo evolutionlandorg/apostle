@@ -371,15 +371,11 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
         Apostle storage matron = tokenId2Apostle[_matronId];
         uint256 sireId = matron.siringWithId;
-
-        if (_resourceToken != address(0)) {
-            // users must approve enough resourceToken to this contract
-            // if _resourceToken is registered
-            // will be checked in mixgenes
-            uint256 expense = _level * registry.uintOf(UINT_MIX_TALENT);
-            require(_level > 0 && _amountMax >= expense, 'resource for mixing is not enough.');
-            ERC20(_resourceToken).transferFrom(msg.sender, address(this), expense);
-        }
+        require(isValidResourceToken(_resourceToken), "Invalid resource");
+        // users must approve enough resourceToken to this contract
+        uint256 expense = _level * registry.uintOf(UINT_MIX_TALENT);
+        require(_level > 0 && _amountMax >= expense, 'resource for mixing is not enough.');
+        ERC20(_resourceToken).transferFrom(msg.sender, address(this), expense);
 
 
         require(_payAndMix(_matronId, sireId, _resourceToken, _level));
