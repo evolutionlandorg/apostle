@@ -343,10 +343,6 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
         require(_amountMax >= autoBirthFee,
             "your offer is lower than the current price, try again with a higher one.");
-        uint refund = _amountMax - autoBirthFee;
-        if (refund > 0) {
-            ERC20(ring).transfer(msg.sender, refund);
-        }
 
         address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
         ring.approve(pool, autoBirthFee);

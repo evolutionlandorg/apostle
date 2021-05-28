@@ -131,12 +131,8 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
         // Check that the incoming bid is higher than the current price
         uint priceInToken = getCurrentPriceInToken(sireId);
 
-        require(_amountMax >= priceInToken,
+        require(_amountMax >= (priceInToken + autoBirthFee),
             "your offer is lower than the current price, try again with a higher one.");
-        uint refund = _amountMax - priceInToken;
-        if (refund > 0) {
-            ERC20(auction.token).transfer(msg.sender, refund);
-        }
 
         require(ERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
 
