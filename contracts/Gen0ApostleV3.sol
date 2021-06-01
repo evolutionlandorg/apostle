@@ -4,8 +4,8 @@ import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "./interfaces/IApostleBase.sol";
 import "./interfaces/IApostleAuction.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
+import "./interfaces/IERC20.sol";
 
 contract Gen0ApostleV3 is PausableDSAuth, ApostleSettingIds {
     // claimedToken event
@@ -97,7 +97,7 @@ contract Gen0ApostleV3 is PausableDSAuth, ApostleSettingIds {
             owner.transfer(address(this).balance);
             return;
         }
-        ERC20 token = ERC20(_token);
+        IERC20 token = IERC20(_token);
         uint balance = token.balanceOf(address(this));
         token.transfer(owner, balance);
 

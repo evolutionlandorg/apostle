@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/interfaces/IObjectOwnership.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
@@ -15,6 +14,7 @@ import "./interfaces/IGeneScience.sol";
 import "./interfaces/IHabergPotionShop.sol";
 import "./interfaces/ILandBase.sol";
 import "./interfaces/IRevenuePool.sol";
+import "./interfaces/IERC20.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -340,7 +340,7 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // caller must approve first.
         uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
         require(_amountMax >= autoBirthFee, 'not enough to breed.');
-        ERC20 ring = ERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN));
+        IERC20 ring = IERC20(registry.addressOf(CONTRACT_RING_ERC20_TOKEN));
         require(ring.transferFrom(msg.sender, address(this), autoBirthFee), "transfer failed");
 
         address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
@@ -375,7 +375,7 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // users must approve enough resourceToken to this contract
         uint256 expense = _level * registry.uintOf(UINT_MIX_TALENT);
         require(_level > 0 && _amountMax >= expense, 'resource for mixing is not enough.');
-        ERC20(_resourceToken).transferFrom(msg.sender, address(this), expense);
+        IERC20(_resourceToken).transferFrom(msg.sender, address(this), expense);
 
 
         require(_payAndMix(_matronId, sireId, _resourceToken, _level));

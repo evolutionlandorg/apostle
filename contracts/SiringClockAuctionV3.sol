@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "@evolutionland/common/contracts/interfaces/ISettingsRegistry.sol";
 import "@evolutionland/common/contracts/interfaces/ITokenUse.sol";
 import "./interfaces/IApostleBase.sol";
 import "./interfaces/IRevenuePool.sol";
 import "./SiringAuctionBase.sol";
+import "./interfaces/IERC20.sol";
 
 /// @title Clock auction for non-fungible tokens.
 contract SiringClockAuctionV3 is SiringAuctionBase {
@@ -134,7 +134,7 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
         require(_amountMax >= (priceInToken + autoBirthFee),
             "your offer is lower than the current price, try again with a higher one.");
 
-        require(ERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
+        require(IERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
 
         _removeAuction(sireId);
 
@@ -152,9 +152,9 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
         require(objectOwnership.ownerOf(_matronId) == _from, "You can only breed your own apostle.");
         //uint256 ownerCutAmount = _computeCut(priceInToken);
         uint cut = _computeCut(_priceInToken);
-        ERC20(_auctionToken).transfer(_seller, (_priceInToken - cut));
+        IERC20(_auctionToken).transfer(_seller, (_priceInToken - cut));
         address pool = registry.addressOf(CONTRACT_REVENUE_POOL);
-        ERC20(_auctionToken).approve(pool, (cut + _autoBirthFee));
+        IERC20(_auctionToken).approve(pool, (cut + _autoBirthFee));
         IRevenuePool(pool).reward(_auctionToken, (cut + _autoBirthFee), _from);
 
         IApostleBase(registry.addressOf(CONTRACT_APOSTLE_BASE)).approveSiring(_from, _sireId);
