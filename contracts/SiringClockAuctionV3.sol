@@ -136,16 +136,17 @@ contract SiringClockAuctionV3 is SiringAuctionBase {
 
         require(IERC20(auction.token).transferFrom(msg.sender, address(this), (priceInToken + autoBirthFee)), 'transfer failed');
 
-        _removeAuction(sireId);
-
         if (priceInToken > 0) {
             _bidWithToken(auction.token, msg.sender, auction.seller, sireId, matronId, priceInToken, autoBirthFee);
         }
+        _removeAuction(sireId);
     }
 
 
     function _bidWithToken(
         address _auctionToken, address _from, address _seller, uint256 _sireId, uint256 _matronId, uint256 _priceInToken, uint256 _autoBirthFee)
+
+    canBeStoredWith128Bits(_priceInToken)
     internal
     {
         ERC721 objectOwnership = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP));
