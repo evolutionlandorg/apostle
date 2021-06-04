@@ -496,12 +496,6 @@ contract ApostleBaseV3 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         );
     }
 
-    function toBytes(address x) public pure returns (bytes b) {
-        b = new bytes(32);
-        assembly {mstore(add(b, 32), x)}
-    }
-
-
     function _updateCoolDown() internal {
         cooldowns[0] =  uint32(1 minutes);
         cooldowns[1] =  uint32(2 minutes);
