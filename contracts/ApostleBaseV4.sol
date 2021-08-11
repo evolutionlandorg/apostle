@@ -372,7 +372,7 @@ contract ApostleBaseV4 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
         Apostle storage matron = tokenId2Apostle[_matronId];
         uint256 sireId = matron.siringWithId;
-        require(isValidResourceToken(_resourceToken), 'invalid resoutce token.');
+        require(isValidResourceToken(_resourceToken), 'invalid resource token.');
         // users must approve enough resourceToken to this contract
         uint256 expense = _level * registry.uintOf(UINT_MIX_TALENT);
         require(_level > 0 && _amountMax >= expense, 'resource for mixing is not enough.');
