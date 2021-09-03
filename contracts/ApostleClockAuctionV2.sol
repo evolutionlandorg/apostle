@@ -301,7 +301,7 @@ contract ApostleClockAuctionV2 is PausableDSAuth, ApostleSettingIds {
         _auction.lastBidStartAt = uint48(now);
         _auction.lastReferer = _referer;
 
-        return (_auction.lastBidStartAt, returnToLastBidder));
+        return (_auction.lastBidStartAt, returnToLastBidder);
     }
 
     // TODO: add _token to compatible backwards with ring and eth
