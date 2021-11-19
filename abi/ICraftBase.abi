@@ -1,0 +1,1 @@
+[{"constant":true,"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getMetaData","outputs":[{"name":"obj_id","type":"uint256"},{"name":"grade","type":"uint256"},{"name":"prefer","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}]

@@ -17,6 +17,7 @@ import "./interfaces/IRevenuePool.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IInterstellarEncoder.sol";
 import "./interfaces/IItemBase.sol";
+import "./interfaces/ICraftBase.sol";
 
 // all Ids in this contracts refer to index which is using 128-bit unsigned integers.
 // this is CONTRACT_APOSTLE_BASE
@@ -74,7 +75,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
         //v5 add
         uint256 class;
-        uint256 extraPrefer;
+        uint256 preferExtra;
     }
 
     uint32[14] public cooldowns = [
@@ -181,7 +182,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
             cooldownIndex : uint16(coolDownIndex),
             generation : uint16(_generation),
             class: 0,
-            extraPrefer: 0
+            preferExtra: 0
             });
 
         lastApostleObjectId += 1;
@@ -600,7 +601,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
     }
 
-    function _equip_check(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) private view {
+    function _equip_check(uint256 _apo_id, uint256 _slot, address _equip_token) private view {
         address ownership = registry.addressOf(CONTRACT_OBJECT_OWNERSHIP);
 		require(msg.sender == ERC721(ownership).ownerOf(_apo_id), "!owner");
         require(_slot == 1, "!slot");
@@ -610,21 +611,45 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     }
 
     function equip(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) external whenNotPaused {
-        _equip_check(_apo_id, _slot, _equip_token, _equip_id);
+        _equip_check(_apo_id, _slot, _equip_token);
         address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
 		uint8 objectClass = IInterstellarEncoder(encoder).getObjectClass(_equip_id);
         require(objectClass == ITEM_OBJECT_CLASS || objectClass == EQUIPMENT_OBJECT_CLASS, "!class");
-        address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
-        if (objectClass == ITEM_OBJECT_CLASS) {
-            (uint16 objectClassExt,uint16 class,) = IItemBase(objectClass).getBaseInfo(_equip_id);
-            require(objectClassExt == EQUIPMENT_OBJECT_CLASS, "!class");
-            uint16 prefer = IItemBase(objectClass).getPrefer(_equip_id);
-            // tokenId2Apostle[_apo_id][]
-        }
+        _update_extra_prefer(_apo_id, _equip_id, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
         emit Equip(_apo_id, _slot, _equip_token, _equip_id);
+    }
+
+    function _update_extra_prefer(uint256 _apo_id, uint256 _equip_id, bool flag) internal {
+        uint256 prefer;
+        uint256 preferExtra = tokenId2Apostle[_apo_id].preferExtra;
+        address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
+        address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
+		uint8 objectClass = IInterstellarEncoder(encoder).getObjectClass(_equip_id);
+        if (objectClass == ITEM_OBJECT_CLASS) {
+            (uint16 objectClassExt, uint16 class,) = IItemBase(objectClass).getBaseInfo(_equip_id);
+            require(objectClassExt == EQUIPMENT_OBJECT_CLASS, "!class");
+            prefer = IItemBase(objectAddress).getPrefer(_equip_id);
+            preferExtra = _calc_extra_prefer(prefer, preferExtra, class, flag);
+        } else if (objectClass == EQUIPMENT_OBJECT_CLASS) {
+            (,,prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
+            preferExtra = _calc_extra_prefer(prefer, preferExtra, 0, flag);
+        }
+        tokenId2Apostle[_apo_id].preferExtra = preferExtra;
+    }
+
+    function _calc_extra_prefer(uint256 prefer, uint256 preferExtra, uint256 class, bool flag) internal pure returns (uint256 newPreferExtra) {
+        for (uint256 i = 1; i < 6; i++) {
+            if (prefer & (1 << i) > 0) {
+                if (flag) {
+                    newPreferExtra = preferExtra + ((class + 1) << ((i-1) * 16));
+                } else {
+                    newPreferExtra = preferExtra - ((class + 1) << ((i-1) * 16));
+                }
+            }
+        }
     }
 
     function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
@@ -632,6 +657,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(bar.token != address(0), "!exist");
 		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
+        _update_extra_prefer(_apo_id, bar.id, false);
         ERC721(bar.token).transferFrom(address(this), msg.sender, bar.id);
         delete statuses[bar.token][bar.id];
         delete bars[_apo_id][_slot];
