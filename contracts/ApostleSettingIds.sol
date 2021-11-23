@@ -36,6 +36,5 @@ contract ApostleSettingIds is SettingIds {
 
     bytes32 public constant CONTRACT_GEN0_APOSTLE = "CONTRACT_GEN0_APOSTLE";
 
-	uint8 public constant ITEM_OBJECT_CLASS = 5; // Item
 	uint8 public constant EQUIPMENT_OBJECT_CLASS = 6; //Equipment
 }

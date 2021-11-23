@@ -10,7 +10,7 @@ import "@evolutionland/common/contracts/interfaces/IActivity.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./ApostleSettingIds.sol";
-import "./interfaces/IGeneScience.sol";
+import "./interfaces/IGeneScienceV9.sol";
 import "./interfaces/IHabergPotionShop.sol";
 import "./interfaces/ILandBase.sol";
 import "./interfaces/IRevenuePool.sol";
@@ -322,7 +322,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         Apostle storage sire = tokenId2Apostle[_sireId];
         return _isValidMatingPair(matron, _matronId, sire, _sireId) &&
         _isSiringPermitted(_sireId, _matronId) &&
-        IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).isOkWithRaceAndGender(matron.genes, sire.genes);
+        IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE)).isOkWithRaceAndGender(matron.genes, sire.genes);
     }
 
 
@@ -445,7 +445,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (uint256 childGenes, uint256 childTalents) = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
+        (uint256 childGenes, uint256 childTalents) = IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
 
         address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
@@ -489,10 +489,9 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
     /// IMinerObject
     function strengthOf(uint256 _tokenId, address _resourceToken, uint256 _landTokenId) public view returns (uint256) {
-        // (天赋计算得到的基础数值(包括天赋加成装备效果))*(1+职业加成+元素加成)+装备效果+肉鸽卡牌
-        uint talents = tokenId2Apostle[_tokenId].talents;
-        return IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE))
-        .getStrength(talents, _resourceToken, _landTokenId);
+        Apostle memory apo = tokenId2Apostle[_tokenId];
+        return IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE))
+        .getStrength(apo.talents, _resourceToken, _landTokenId, apo.preferExtra, getClassEnhance(apo.class));
     }
 
     /// IActivityObject
@@ -577,7 +576,17 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
     }
 
+    function getClassEnhance(uint256 id) public pure returns (uint256 enhance) {
+        if (id == 3) {
+            enhance = 3;
+        }
+    }
+
     function changeClass(uint256 tokenId, uint256 _class, uint256 _amountMax) external {
+        require(1 <= _class && _class <= 2, "!class");
+        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(tokenId), "!use");
+		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(tokenId), "!owner");
+
         // require(equipment is null)
         Apostle storage apo = tokenId2Apostle[tokenId];
         require(apo.class != _class, '!class');
@@ -613,30 +622,20 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     function equip(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) external whenNotPaused {
         _equip_check(_apo_id, _slot, _equip_token);
         address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
-		uint8 objectClass = IInterstellarEncoder(encoder).getObjectClass(_equip_id);
-        require(objectClass == ITEM_OBJECT_CLASS || objectClass == EQUIPMENT_OBJECT_CLASS, "!class");
-        _update_extra_prefer(_apo_id, _equip_id, true);
+        require(IInterstellarEncoder(encoder).getObjectClass(_equip_id) == EQUIPMENT_OBJECT_CLASS, "!eclass");
+        address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
+        (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
+        require(tokenId2Apostle[_apo_id].class == class, "!aclass");
+        _update_extra_prefer(_apo_id, prefer, class, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
         emit Equip(_apo_id, _slot, _equip_token, _equip_id);
     }
 
-    function _update_extra_prefer(uint256 _apo_id, uint256 _equip_id, bool flag) internal {
-        uint256 prefer;
+    function _update_extra_prefer(uint256 _apo_id, uint256 prefer, uint256 class, bool flag) internal {
         uint256 preferExtra = tokenId2Apostle[_apo_id].preferExtra;
-        address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
-        address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
-		uint8 objectClass = IInterstellarEncoder(encoder).getObjectClass(_equip_id);
-        if (objectClass == ITEM_OBJECT_CLASS) {
-            (uint16 objectClassExt, uint16 class,) = IItemBase(objectClass).getBaseInfo(_equip_id);
-            require(objectClassExt == EQUIPMENT_OBJECT_CLASS, "!class");
-            prefer = IItemBase(objectAddress).getPrefer(_equip_id);
-            preferExtra = _calc_extra_prefer(prefer, preferExtra, class, flag);
-        } else if (objectClass == EQUIPMENT_OBJECT_CLASS) {
-            (,,prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
-            preferExtra = _calc_extra_prefer(prefer, preferExtra, 0, flag);
-        }
+        preferExtra = _calc_extra_prefer(prefer, preferExtra, class, flag);
         tokenId2Apostle[_apo_id].preferExtra = preferExtra;
     }
 
@@ -657,7 +656,9 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(bar.token != address(0), "!exist");
 		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
-        _update_extra_prefer(_apo_id, bar.id, false);
+        address objectAddress = IInterstellarEncoder(registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER)).getObjectAddress(bar.id);
+        (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(bar.id);
+        _update_extra_prefer(_apo_id, prefer, class, false);
         ERC721(bar.token).transferFrom(address(this), msg.sender, bar.id);
         delete statuses[bar.token][bar.id];
         delete bars[_apo_id][_slot];
