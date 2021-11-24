@@ -582,13 +582,13 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
     }
 
-    function changeClass(uint256 tokenId, uint256 _class, uint256 _amountMax) external {
+    function changeClass(uint256 _apo_id, uint256 _class, uint256 _amountMax) external {
         require(1 <= _class && _class <= 2, "!class");
-        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(tokenId), "!use");
-		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(tokenId), "!owner");
+        require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
+		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
 
-        // require(equipment is null)
-        Apostle storage apo = tokenId2Apostle[tokenId];
+        require(isEmptyBar(_apo_id), "!empty");
+        Apostle storage apo = tokenId2Apostle[_apo_id];
         require(apo.class != _class, '!class');
 
         uint256 changeClassFee = registry.uintOf(UINT_CHANGECLASS_FEE);
@@ -601,7 +601,11 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         IRevenuePool(pool).reward(ring, changeClassFee, msg.sender);
 
         apo.class = _class;
-        emit ClassChange(tokenId, apo.class);
+        emit ClassChange(_apo_id, apo.class);
+    }
+
+    function isEmptyBar(uint256 _apo_id) public view returns (bool) {
+        return bars[_apo_id][1].token == address(0);
     }
 
     function get_equip_bar_name(uint256 slot) external pure returns (string memory desc) {
