@@ -625,7 +625,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(IInterstellarEncoder(encoder).getObjectClass(_equip_id) == EQUIPMENT_OBJECT_CLASS, "!eclass");
         address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
         (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
-        require(tokenId2Apostle[_apo_id].class == class, "!aclass");
+        require(tokenId2Apostle[_apo_id].class == obj_id, "!aclass");
         _update_extra_prefer(_apo_id, prefer, class, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
