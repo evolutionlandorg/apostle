@@ -604,6 +604,10 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         emit ClassChange(_apo_id, apo.class);
     }
 
+    function exist(uint256 _apo_id, uint256 _slot) public view returns (bool) {
+        return bars[_apo_id][_slot].token != address(0);
+    }
+
     function isEmptyBar(uint256 _apo_id) public view returns (bool) {
         return bars[_apo_id][1].token == address(0);
     }
