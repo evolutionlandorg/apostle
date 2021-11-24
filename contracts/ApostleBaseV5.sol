@@ -585,7 +585,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     function changeClass(uint256 _apo_id, uint256 _class, uint256 _amountMax) external {
         require(1 <= _class && _class <= 2, "!class");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
-		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
+        require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
 
         require(isEmptyBar(_apo_id), "!empty");
         Apostle storage apo = tokenId2Apostle[_apo_id];
@@ -620,7 +620,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
     function _equip_check(uint256 _apo_id, uint256 _slot, address _equip_token) private view {
         address ownership = registry.addressOf(CONTRACT_OBJECT_OWNERSHIP);
-		require(msg.sender == ERC721(ownership).ownerOf(_apo_id), "!owner");
+        require(msg.sender == ERC721(ownership).ownerOf(_apo_id), "!owner");
         require(_slot == 1, "!slot");
         require(bars[_apo_id][_slot].token == address(0), "exist");
         require(_equip_token == ownership, "!token");
@@ -662,7 +662,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
         Bar memory bar = bars[_apo_id][_slot];
         require(bar.token != address(0), "!exist");
-		require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
+        require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
         address objectAddress = IInterstellarEncoder(registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER)).getObjectAddress(bar.id);
         (,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(bar.id);
