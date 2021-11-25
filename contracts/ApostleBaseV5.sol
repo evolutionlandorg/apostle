@@ -42,8 +42,8 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     event Unbox(uint256 tokenId, uint256 activeTime);
 
     // V5 add
-    event Equip(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
-    event Divest(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
+    event Equip(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id, uint256 preferExtra);
+    event Divest(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id, uint256 preferExtra);
 
     struct Apostle {
         // An apostles genes never change.
@@ -514,7 +514,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // do nothing.
     }
 
-    function getApostleInfo(uint256 _tokenId) public view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
+    function getApostleInfo(uint256 _tokenId) public view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
         Apostle storage apostle = tokenId2Apostle[_tokenId];
         return (
         apostle.genes,
@@ -526,7 +526,9 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         uint256(apostle.birthTime),
         uint256(apostle.activeTime),
         uint256(apostle.deadTime),
-        uint256(apostle.cooldownEndTime)
+        uint256(apostle.cooldownEndTime),
+        uint256(apostle.class),
+        uint256(apostle.preferExtra)
         );
     }
 
@@ -634,15 +636,15 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
         (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
         require(tokenId2Apostle[_apo_id].class == obj_id, "!aclass");
-        _update_extra_prefer(_apo_id, prefer, class, true);
+        uint256 preferExtra = _update_extra_prefer(_apo_id, prefer, class, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
-        emit Equip(_apo_id, _slot, _equip_token, _equip_id);
+        emit Equip(_apo_id, _slot, _equip_token, _equip_id, preferExtra);
     }
 
-    function _update_extra_prefer(uint256 _apo_id, uint256 prefer, uint256 class, bool flag) internal {
-        uint256 preferExtra = tokenId2Apostle[_apo_id].preferExtra;
+    function _update_extra_prefer(uint256 _apo_id, uint256 prefer, uint256 class, bool flag) internal returns (uint256 preferExtra) {
+        preferExtra = tokenId2Apostle[_apo_id].preferExtra;
         preferExtra = _calc_extra_prefer(prefer, preferExtra, class, flag);
         tokenId2Apostle[_apo_id].preferExtra = preferExtra;
     }
@@ -666,11 +668,11 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
         address objectAddress = IInterstellarEncoder(registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER)).getObjectAddress(bar.id);
         (,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(bar.id);
-        _update_extra_prefer(_apo_id, prefer, class, false);
+        uint256 preferExtra = _update_extra_prefer(_apo_id, prefer, class, false);
         ERC721(bar.token).transferFrom(address(this), msg.sender, bar.id);
         delete statuses[bar.token][bar.id];
         delete bars[_apo_id][_slot];
-        emit Divest(_apo_id, _slot, bar.token, bar.id);
+        emit Divest(_apo_id, _slot, bar.token, bar.id, preferExtra);
     }
 }
 
