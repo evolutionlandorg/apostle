@@ -42,8 +42,8 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     event Unbox(uint256 tokenId, uint256 activeTime);
 
     // V5 add
-    event Equip(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id, uint256 preferExtra);
-    event Divest(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id, uint256 preferExtra);
+    event Equip(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
+    event Divest(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
 
     struct Apostle {
         // An apostles genes never change.
@@ -636,11 +636,11 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
         (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
         require(tokenId2Apostle[_apo_id].class == obj_id, "!aclass");
-        uint256 preferExtra = _update_extra_prefer(_apo_id, prefer, class, true);
+        _update_extra_prefer(_apo_id, prefer, class, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
-        emit Equip(_apo_id, _slot, _equip_token, _equip_id, preferExtra);
+        emit Equip(_apo_id, _slot, _equip_token, _equip_id);
     }
 
     function _update_extra_prefer(uint256 _apo_id, uint256 prefer, uint256 class, bool flag) internal returns (uint256 preferExtra) {
@@ -668,11 +668,11 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
         address objectAddress = IInterstellarEncoder(registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER)).getObjectAddress(bar.id);
         (,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(bar.id);
-        uint256 preferExtra = _update_extra_prefer(_apo_id, prefer, class, false);
+        _update_extra_prefer(_apo_id, prefer, class, false);
         ERC721(bar.token).transferFrom(address(this), msg.sender, bar.id);
         delete statuses[bar.token][bar.id];
         delete bars[_apo_id][_slot];
-        emit Divest(_apo_id, _slot, bar.token, bar.id, preferExtra);
+        emit Divest(_apo_id, _slot, bar.token, bar.id);
     }
 }
 
