@@ -10,7 +10,7 @@ import "@evolutionland/common/contracts/interfaces/IActivity.sol";
 import "@evolutionland/common/contracts/PausableDSAuth.sol";
 import "openzeppelin-solidity/contracts/introspection/SupportsInterfaceWithLookup.sol";
 import "./ApostleSettingIds.sol";
-import "./interfaces/IGeneScienceV9.sol";
+import "./interfaces/IGeneScience.sol";
 import "./interfaces/IHabergPotionShop.sol";
 import "./interfaces/ILandBase.sol";
 import "./interfaces/IRevenuePool.sol";
@@ -75,7 +75,6 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
         //v5 add
         uint256 class;
-        uint256 preferExtra;
     }
 
     uint32[14] public cooldowns = [
@@ -181,8 +180,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
             siringWithId : 0,
             cooldownIndex : uint16(coolDownIndex),
             generation : uint16(_generation),
-            class: 0,
-            preferExtra: 0
+            class: 0
             });
 
         lastApostleObjectId += 1;
@@ -322,7 +320,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         Apostle storage sire = tokenId2Apostle[_sireId];
         return _isValidMatingPair(matron, _matronId, sire, _sireId) &&
         _isSiringPermitted(_sireId, _matronId) &&
-        IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE)).isOkWithRaceAndGender(matron.genes, sire.genes);
+        IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).isOkWithRaceAndGender(matron.genes, sire.genes);
     }
 
 
@@ -445,7 +443,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
 
         // Call the sooper-sekret, sooper-expensive, gene mixing operation.
-        (uint256 childGenes, uint256 childTalents) = IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
+        (uint256 childGenes, uint256 childTalents) = IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE)).mixGenesAndTalents(matron.genes, sire.genes, matron.talents, sire.talents, _resourceToken, _level);
 
         address owner = ERC721(registry.addressOf(SettingIds.CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_matronId);
         // Make the new Apostle!
@@ -489,9 +487,9 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
 
     /// IMinerObject
     function strengthOf(uint256 _tokenId, address _resourceToken, uint256 _landTokenId) public view returns (uint256) {
-        Apostle memory apo = tokenId2Apostle[_tokenId];
-        return IGeneScienceV9(registry.addressOf(CONTRACT_GENE_SCIENCE))
-        .getStrength(apo.talents, _resourceToken, _landTokenId, apo.preferExtra, getClassEnhance(apo.class));
+        uint talents = tokenId2Apostle[_tokenId].talents;
+        return IGeneScience(registry.addressOf(CONTRACT_GENE_SCIENCE))
+        .getStrength(talents, _resourceToken, _landTokenId);
     }
 
     /// IActivityObject
@@ -514,7 +512,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         // do nothing.
     }
 
-    function getApostleInfo(uint256 _tokenId) public view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
+    function getApostleInfo(uint256 _tokenId) public view returns(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256) {
         Apostle storage apostle = tokenId2Apostle[_tokenId];
         return (
         apostle.genes,
@@ -527,8 +525,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         uint256(apostle.activeTime),
         uint256(apostle.deadTime),
         uint256(apostle.cooldownEndTime),
-        uint256(apostle.class),
-        uint256(apostle.preferExtra)
+        uint256(apostle.class)
         );
     }
 
@@ -575,12 +572,6 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
             return "Guard";
         } else if (id == 3) {
             return "Miner";
-        }
-    }
-
-    function getClassEnhance(uint256 id) public pure returns (uint256 enhance) {
-        if (id == 3) {
-            enhance = 3;
         }
     }
 
@@ -634,31 +625,12 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
         require(IInterstellarEncoder(encoder).getObjectClass(_equip_id) == EQUIPMENT_OBJECT_CLASS, "!eclass");
         address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
-        (uint256 obj_id,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(_equip_id);
+        (uint256 obj_id,,,) = ICraftBase(objectAddress).getMetaData(_equip_id);
         require(tokenId2Apostle[_apo_id].class == obj_id, "!aclass");
-        _update_extra_prefer(_apo_id, prefer, class, true);
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
         emit Equip(_apo_id, _slot, _equip_token, _equip_id);
-    }
-
-    function _update_extra_prefer(uint256 _apo_id, uint256 prefer, uint256 class, bool flag) internal returns (uint256 preferExtra) {
-        preferExtra = tokenId2Apostle[_apo_id].preferExtra;
-        preferExtra = _calc_extra_prefer(prefer, preferExtra, class, flag);
-        tokenId2Apostle[_apo_id].preferExtra = preferExtra;
-    }
-
-    function _calc_extra_prefer(uint256 prefer, uint256 preferExtra, uint256 class, bool flag) internal pure returns (uint256 newPreferExtra) {
-        for (uint256 i = 1; i < 6; i++) {
-            if (prefer & (1 << i) > 0) {
-                if (flag) {
-                    newPreferExtra = preferExtra + ((class + 1) << ((i-1) * 16));
-                } else {
-                    newPreferExtra = preferExtra - ((class + 1) << ((i-1) * 16));
-                }
-            }
-        }
     }
 
     function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
@@ -666,9 +638,6 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         require(bar.token != address(0), "!exist");
         require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
-        address objectAddress = IInterstellarEncoder(registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER)).getObjectAddress(bar.id);
-        (,,uint256 class, uint256 prefer) = ICraftBase(objectAddress).getMetaData(bar.id);
-        _update_extra_prefer(_apo_id, prefer, class, false);
         ERC721(bar.token).transferFrom(address(this), msg.sender, bar.id);
         delete statuses[bar.token][bar.id];
         delete bars[_apo_id][_slot];
