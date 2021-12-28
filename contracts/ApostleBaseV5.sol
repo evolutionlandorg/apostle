@@ -42,7 +42,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     event Unbox(uint256 tokenId, uint256 activeTime);
 
     // V5 add
-    event Equip(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
+    event Equip(address indexed usr, uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
     event Divest(uint256 indexed _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id);
 
     struct Apostle {
@@ -611,17 +611,18 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         }
     }
 
-    function _equip_check(uint256 _apo_id, uint256 _slot, address _equip_token) private view {
+    function _equip_check(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) private view {
         address ownership = registry.addressOf(CONTRACT_OBJECT_OWNERSHIP);
         require(msg.sender == ERC721(ownership).ownerOf(_apo_id), "!owner");
         require(_slot == 1, "!slot");
         require(bars[_apo_id][_slot].token == address(0), "exist");
         require(_equip_token == ownership, "!token");
+        require(msg.sender == ERC721(_equip_token).ownerOf(_equip_id), "!owner");
         require(ITokenUse(registry.addressOf(CONTRACT_TOKEN_USE)).isObjectReadyToUse(_apo_id), "!use");
     }
 
     function equip(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) external whenNotPaused {
-        _equip_check(_apo_id, _slot, _equip_token);
+        _equip_check(_apo_id, _slot, _equip_token, _equip_id);
         address encoder = registry.addressOf(CONTRACT_INTERSTELLAR_ENCODER);
         require(IInterstellarEncoder(encoder).getObjectClass(_equip_id) == EQUIPMENT_OBJECT_CLASS, "!eclass");
         address objectAddress = IInterstellarEncoder(encoder).getObjectAddress(_equip_id);
@@ -630,7 +631,7 @@ contract ApostleBaseV5 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         ERC721(_equip_token).transferFrom(msg.sender, address(this), _equip_id);
         bars[_apo_id][_slot] = Bar(_equip_token, _equip_id);
         statuses[_equip_token][_equip_id] = Status(_apo_id, _slot);
-        emit Equip(_apo_id, _slot, _equip_token, _equip_id);
+        emit Equip(msg.sender, _apo_id, _slot, _equip_token, _equip_id);
     }
 
     function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
