@@ -577,7 +577,7 @@ contract ApostleBaseV6 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     }
 
     function changeClass(uint256 _apo_id, uint256 _class, uint256 _amountMax) external {
-        revert("deprecated")
+        revert("deprecated");
     }
 
     function exist(uint256 _apo_id, uint256 _slot) public view returns (bool) {
@@ -605,7 +605,7 @@ contract ApostleBaseV6 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
     }
 
     function equip(uint256 _apo_id, uint256 _slot, address _equip_token, uint256 _equip_id) external {
-        revert("deprecated")
+        revert("deprecated");
     }
 
     function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
