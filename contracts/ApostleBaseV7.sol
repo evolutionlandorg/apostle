@@ -608,7 +608,7 @@ contract ApostleBaseV6 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         revert("deprecated");
     }
 
-    function divest(uint256 _apo_id, uint256 _slot) external whenNotPaused {
+    function divest(uint256 _apo_id, uint256 _slot) public whenNotPaused {
         Bar memory bar = bars[_apo_id][_slot];
         require(bar.token != address(0), "!exist");
         require(msg.sender == ERC721(registry.addressOf(CONTRACT_OBJECT_OWNERSHIP)).ownerOf(_apo_id), "!owner");
@@ -619,7 +619,7 @@ contract ApostleBaseV6 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         emit Divest(_apo_id, _slot, bar.token, bar.id);
     }
 
-    function multiDivest(uint256[] memory _apo_ids, uint256 _slot) external {
+    function multiDivest(uint256[] _apo_ids, uint256 _slot) external {
         for (uint i = 0; i < _apo_ids.length; i++) {
             divest(_apo_ids[i], _slot);
         }
