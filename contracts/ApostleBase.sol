@@ -422,7 +422,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
         return true;
     }
 
-    function tokenFallback(address _from, uint256 _value, bytes _data) public {
+    function tokenFallback(address _from, uint256 _value, bytes /*_data*/) public {
         uint256 autoBirthFee = registry.uintOf(ApostleSettingIds.UINT_AUTOBIRTH_FEE);
 
         uint matronId;
@@ -502,7 +502,7 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
     }
 
     /// IActivityObject
-    function activityAdded(uint256 _tokenId, address _activity, address _user) auth public {
+    function activityAdded(uint256 _tokenId, address /*_activity*/, address /*_user*/) auth public {
         // to active the apostle when it do activity the first time
         if (tokenId2Apostle[_tokenId].activeTime == 0) {
             tokenId2Apostle[_tokenId].activeTime = uint48(now);
@@ -512,12 +512,12 @@ contract ApostleBase is SupportsInterfaceWithLookup, IActivity, IActivityObject,
 
     }
 
-    function activityRemoved(uint256 _tokenId, address _activity, address _user) auth public {
+    function activityRemoved(uint256 /*_tokenId*/, address /*_activity*/, address /*_user*/) auth public {
         // do nothing.
     }
 
     /// IActivity
-    function activityStopped(uint256 _tokenId) auth public {
+    function activityStopped(uint256 /*_tokenId*/) auth public {
         // do nothing.
     }
 

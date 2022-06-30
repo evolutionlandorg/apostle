@@ -11,6 +11,8 @@ contract ApostleSettingIds is SettingIds {
     ///  the COO role as the gas price changes.
     bytes32 public constant UINT_AUTOBIRTH_FEE = "UINT_AUTOBIRTH_FEE";
 
+    bytes32 public constant UINT_CHANGECLASS_FEE = "UINT_CHANGECLASS_FEE";
+
     bytes32 public constant CONTRACT_APOSTLE_BASE = "CONTRACT_APOSTLE_BASE";
 
     bytes32 public constant CONTRACT_SIRING_AUCTION = "CONTRACT_SIRING_AUCTION";
@@ -30,4 +32,9 @@ contract ApostleSettingIds is SettingIds {
 
     // TODO: move this to common-contract
     bytes32 public constant CONTRACT_LAND_RESOURCE = "CONTRACT_LAND_RESOURCE";
+
+
+    bytes32 public constant CONTRACT_GEN0_APOSTLE = "CONTRACT_GEN0_APOSTLE";
+
+	uint8 public constant EQUIPMENT_OBJECT_CLASS = 6; //Equipment
 }

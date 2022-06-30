@@ -215,7 +215,7 @@ contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
     // to invoke this function
     // @param _data - need to be generated from (tokenId + referer)
 
-    function tokenFallback(address _from, uint256 _valueInToken, bytes _data) public whenNotPaused {
+    function tokenFallback(address _from, uint256 _valueInToken, bytes /*_data*/) public whenNotPaused {
         uint tokenId;
         address referer;
         assembly {
@@ -446,10 +446,11 @@ contract ApostleClockAuction is PausableDSAuth, ApostleSettingIds {
     function onERC721Received(
         address, //_operator,
         address, //_from,
-        uint256 _tokenId,
+        uint256, //_tokenId,
         bytes //_data
     )
     public
+    pure
     returns (bytes4) {
         // owner can put apostle on market
         // after coolDownEndTime
