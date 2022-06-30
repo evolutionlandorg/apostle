@@ -618,6 +618,12 @@ contract ApostleBaseV6 is SupportsInterfaceWithLookup, IActivity, IActivityObjec
         delete bars[_apo_id][_slot];
         emit Divest(_apo_id, _slot, bar.token, bar.id);
     }
+
+    function multiDivest(uint256[] memory _apo_ids, uint256 _slot) external {
+        for (uint i = 0; i < _apo_ids.length; i++) {
+            divest(_apo_ids[i], _slot);
+        }
+    }
 }
 
 
